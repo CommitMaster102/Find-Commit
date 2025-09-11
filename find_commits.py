@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import sys
+from pathlib import Path
+from typing import List, Tuple
+
+from find_commits_lib import (
+    normalize_lf,
+    ensure_repo,
+    compute_blob_hash_bytes,
+    find_exact_blob_commits,
+    commits_touching_path,
+    discover_paths_by_filename,
+    file_content_at,
+    branches_containing,
+    commit_timestamp,
+    choose_preferred,
+    choose_branch_for_commit,
+    default_repo_dir_for,
+    cleanup_repo_cache,
+    fingerprint_text_for_fuzzy,
+    jaccard_similarity,
+    minhash_signature,
+    minhash_similarity,
+    simhash64,
+    simhash_similarity,
+    fetch_forks_into_repo,
+) # type: ignore[attr-defined]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Find Git commits in a repository that contain the exact contents of a "
+            "local file. Provide the file path (or '-' to read from stdin) and the "
+            "repository URL. Optionally provide a path inside the repo to scan when "
+            "no exact blob match is found."
+        )
+    )
+    parser.add_argument(
+        "local_file",
+        help="Local file path to match, or '-' to read content from stdin",
+    )
+    parser.add_argument(
+        "repo_url",
+        help="Git repository URL to search (e.g. https://github.com/org/repo.git)",
+    )
+
+    # Optional arguments
+    parser.add_argument(
+        "--repo-dir",
+        help=(
+            "Local directory for the repository clone/cache. "
+            "Defaults to .repo_<name> in the current directory."
+        ),
+    )
+    parser.add_argument(
+        "--repo-file-path",
+        help=(
+            "Path of the file inside the repository. Only needed for the fallback "
+            "scan when no exact blob match is found."
+        ),
+    )
+    parser.add_argument(
+        "--out-env",
+        default="find_commits.env",
+        help="Path to write environment variables file (default: find_commits.env)",
+    )
+    parser.add_argument(
+        "--out-report",
+        default="find_commits.txt",
+        help="Path to write a text report (default: find_commits.txt)",
+    )
+    parser.add_argument(
+        "--include-forks",
+        action="store_true",
+        help=(
+            "If set, discover GitHub forks of the repository and fetch their heads "
+            "as additional remotes before searching."
+        ),
+    )
+    parser.add_argument(
+        "--github-token",
+        default=os.environ.get("GITHUB_TOKEN", ""),
+        help=(
+            "GitHub token to increase API rate limit when using --include-forks. "
+            "Defaults to $GITHUB_TOKEN if present."
+        ),
+    )
+    parser.add_argument(
+        "--similarity-mode",
+        choices=["jaccard", "minhash", "simhash"],
+        default="jaccard",
+        help=(
+            "Similarity algorithm for fallback scan: jaccard (default), minhash, simhash."
+        ),
+    )
+    parser.add_argument(
+        "--similarity-threshold",
+        type=float,
+        default=0.92,
+        help="Similarity threshold in [0,1] for selecting candidates in fallback mode.",
+    )
+    parser.add_argument(
+        "--shingle-size",
+        type=int,
+        default=5,
+        help="Token shingle size (k) for jaccard/minhash (default: 5).",
+    )
+    parser.add_argument(
+        "--minhash-perm",
+        type=int,
+        default=128,
+        help="Number of permutations for MinHash (default: 128).",
+    )
+    parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Show spinner progress animation during long steps.",
+    )
+    parser.add_argument(
+        "--timings",
+        action="store_true",
+        help="Print per-step timings to terminal (always included in report/env).",
+    )
+    parser.add_argument(
+        "--forks-limit",
+        type=int,
+        default=20,
+        help="Maximum number of forks to fetch when --include-forks is set (1-99, default: 20)",
+    )
+    parser.add_argument(
+        "--forks-offset",
+        type=int,
+        default=0,
+        help="Offset into the forks list before selecting (applied after deduplication)",
+    )
+    args = parser.parse_args()
+
+    # Guard for unexpected exceptions: cleanup repo cache before exiting
+    try:
+        inner(args)
+    except SystemExit:
+        # Already handled cleanup at exit points
+        raise
+    except Exception as e:
+        try:
+            print(f"Unexpected error: {e}", file=sys.stderr)
+        except Exception:
+            pass
+        try:
+            repo_dir = Path(args.repo_dir) if args.repo_dir else default_repo_dir_for(args.repo_url)
+            cleanup_repo_cache(repo_dir, args.repo_url)
+        except Exception:
+            pass
+        sys.exit(1)
+
+
+def inner(args: argparse.Namespace) -> None:
+    from find_commits_lib.core import orchestrate as _inner
+    _inner(args)
+
+
+if __name__ == "__main__":
+    main()
