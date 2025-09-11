@@ -49,3 +49,54 @@ jobs:
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{ matrix.language }}"
+
+      - name: Summarize CodeQL alerts
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          curl -sSf -H "Authorization: Bearer $GITHUB_TOKEN" \
+               -H "Accept: application/vnd.github+json" \
+               "https://api.github.com/repos/$REPO/code-scanning/alerts?state=open&per_page=100" \
+               -o alerts.json || echo "[]" > alerts.json
+
+          python - <<'PY'
+          import json, os, sys
+          repo = os.environ.get("REPO", "")
+          try:
+              with open("alerts.json", "r", encoding="utf-8") as fh:
+                  data = json.load(fh)
+          except Exception:
+              data = []
+
+          if isinstance(data, dict) and data.get("message"):
+              total = 0
+              counts = {"error": 0, "warning": 0, "note": 0}
+          else:
+              total = len(data)
+              counts = {"error": 0, "warning": 0, "note": 0}
+              for a in data:
+                  level = ((a.get("rule") or {}).get("severity") or "").lower()
+                  if level in counts:
+                      counts[level] += 1
+
+          summary = (
+              "## CodeQL Alerts Summary\n\n"
+              f"- Open alerts: {total}\n"
+              f"- error: {counts['error']}\n"
+              f"- warning: {counts['warning']}\n"
+              f"- note: {counts['note']}\n\n"
+              f"View full results: https://github.com/{repo}/security/code-scanning\n"
+          )
+
+          sys.stdout.write(summary)
+          path = os.environ.get("GITHUB_STEP_SUMMARY", "/dev/null")
+          try:
+              with open(path, "a", encoding="utf-8") as fh:
+                  fh.write(summary)
+          except Exception:
+              pass
+          PY
