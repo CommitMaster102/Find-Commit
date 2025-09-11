@@ -6,7 +6,7 @@ We maintain security fixes on the latest released version. Older versions may no
 
 ## Reporting a Vulnerability
 
-- Please email security reports to: security@placeholder.local (or open a private security advisory on GitHub).
+- Please open a private security advisory on GitHub.
 - Do not open public issues for vulnerabilities.
 - Include reproduction steps, affected versions, and any relevant logs.
 - We will acknowledge your report within 3 business days.
