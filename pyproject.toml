@@ -11,10 +11,30 @@ requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [{name = "CommitMaster102"}]
 dependencies = []
+keywords = ["git", "search", "commits", "similarity", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 
 [project.urls]
-Homepage = "https://example.com"
+Git = "https://github.com/CommitMaster102/Find-Commit.git"
 
 [project.scripts]
 find-commits = "find_commits:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "coverage[toml]>=7.2",
+]
+
+[tool.setuptools.packages.find]
+include = ["find_commits_lib*"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-q"
+testpaths = ["tests"]
 
