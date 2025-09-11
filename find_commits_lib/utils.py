@@ -48,6 +48,7 @@ def force_remove_dir(path: Path) -> None:
             os.chmod(p, stat.S_IWRITE)
             func(p)
         except Exception:
+            # Ignore errors when trying to change file permissions
             pass
 
     for _ in range(3):
@@ -55,6 +56,7 @@ def force_remove_dir(path: Path) -> None:
             shutil.rmtree(path, onexc=on_rm_error)
             return
         except Exception:
+            # Wait before retrying directory removal
             time.sleep(0.2)
     # Final attempt ignoring errors
     shutil.rmtree(path, ignore_errors=True)
@@ -73,6 +75,7 @@ def cleanup_repo_cache(repo_dir: Path, repo_url: str) -> None:
         else:
             force_remove_dir(default_dir)
     except Exception:
+        # Ignore errors during cache cleanup - best effort only
         pass
 
 
@@ -93,6 +96,7 @@ class Spinner:
             msg = f"\r[{frame}] {label}"
             os.write(2, msg.encode("utf-8", errors="ignore"))
         except Exception:
+            # Ignore errors when writing to stderr (if stderr is closed)
             pass
 
     def clear(self) -> None:
@@ -101,6 +105,7 @@ class Spinner:
         try:
             os.write(2, b"\r\x1b[K")
         except Exception:
+            # Ignore errors when clearing stderr (if stderr is closed)
             pass
 
 
@@ -124,7 +129,7 @@ def format_duration_human(ms: int) -> str:
 
     For zero duration, return a semantic message indicating that the step wasn't applied or run.
     """ 
-    if ms <= 0 and not ms == 1:
+    if ms <= 0:
         return "wasn't applied or run"
     if ms < 1000:
         return f"Took {ms} milliseconds"
@@ -197,6 +202,7 @@ class AutoProgressBar:
             self._threading = threading
             self._lock = threading.Lock()
         except Exception:
+            # Disable progress bar if threading is not available
             self.enabled = False
 
     def _ellipsize_middle(self, text: str, max_len: int) -> str:
@@ -256,7 +262,7 @@ class AutoProgressBar:
                 # Known total: show real percentage and keep static label
                 label_text = self._ellipsize_middle(label, self._label_w)
                 label_pad = max(0, self._label_w - len(label_text))
-                frac = (current / float(total)) if total > 0 else 0.0
+                frac = current / float(total)
                 filled = int(self._bar_w * frac)
                 filled = max(0, min(self._bar_w, filled))
             label_visual = f"[{label_text}]"
@@ -273,6 +279,7 @@ class AutoProgressBar:
             # Track last len to clear if needed when stopping
             self._last_len = len(line)
         except Exception:
+            # Ignore errors when drawing progress bar (if stderr is closed)
             pass
 
     def _run(self) -> None:
@@ -284,6 +291,7 @@ class AutoProgressBar:
                         self._pulse = (self._pulse + 1) % (self._bar_w + 1)
                 time.sleep(0.3)  # Slower animation
         except Exception:
+            # Ignore errors in progress bar animation thread
             pass
 
     def start(self, label: str) -> None:
@@ -300,6 +308,7 @@ class AutoProgressBar:
                 self._thread = self._threading.Thread(target=self._run, daemon=True)  # type: ignore[attr-defined]
                 self._thread.start()
         except Exception:
+            # Ignore errors when starting progress bar thread
             pass
 
     def update(self, current: int, total: int, label: Optional[str] = None) -> None:
@@ -312,6 +321,7 @@ class AutoProgressBar:
                 self._current = current
                 self._total = total
         except Exception:
+            # Ignore errors when updating progress bar
             pass
 
     def stop(self) -> None:
@@ -322,11 +332,13 @@ class AutoProgressBar:
             if self._thread:
                 self._thread.join(timeout=0.3)
         except Exception:
+            # Ignore errors when stopping progress bar thread
             pass
         # Clear line to ensure next prints start cleanly
         try:
             os.write(2, b"\r\x1b[K")
         except Exception:
+            # Ignore errors when clearing stderr after stopping progress bar
             pass
         self._thread = None
 
@@ -368,6 +380,7 @@ class StepDisplay:
                 os.write(2, b"\r\x1b[K")
                 os.write(2, f"{self.pretty_label} {duration_human}\n".encode("utf-8", errors="ignore"))
             except Exception:
+                # Ignore errors when writing timing info to stderr
                 pass
         return False
 
@@ -393,6 +406,7 @@ class StepTimer:
         try:
             self.on_done(self.name, dt)
         except Exception:
+            # Ignore errors in step timer callback
             pass
         return False
 

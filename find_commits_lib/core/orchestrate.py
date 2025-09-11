@@ -57,8 +57,14 @@ def _read_local_bytes_or_exit(args: argparse.Namespace) -> bytes:
     if not local_path.exists():
         print(f"Local file not found: {local_path}", file=sys.stderr)
         sys.exit(2)
-    with open(local_path, "rb") as f:
+    
+    f = None
+    try:
+        f = open(local_path, "rb")
         return normalize_lf(f.read())
+    finally:
+        if f is not None:
+            f.close()
 
 def _prepare_repository(repo_dir: Path, repo_url: str) -> None:
     ensure_repo(repo_dir, repo_url)
@@ -266,6 +272,7 @@ def _write_report(
         report_lines.append(f"forks_discovered={forks_discovered}")
         report_lines.append(f"forks_selected={forks_selected}")
     except NameError:
+        # Fork-related variables may not be defined if fork fetching was skipped
         pass
     report_lines.append(f"candidates_count={len(candidates)}")
     # timings: group by step and show start, end, duration
@@ -317,6 +324,7 @@ def _write_env_file(
         env_lines.append(f"FORKS_DISCOVERED={forks_discovered}")
         env_lines.append(f"FORKS_SELECTED={forks_selected}")
     except NameError:
+        # Fork-related variables may not be defined if fork fetching was skipped
         pass
     used_branch = choose_branch_for_commit(repo_dir, preferred)
     if used_branch:

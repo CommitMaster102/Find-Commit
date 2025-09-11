@@ -42,8 +42,10 @@ def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
             data = resp.read()
             return status, data
     except HTTPError as e:
+        # Return HTTP error code and response body
         return e.code, e.read() if hasattr(e, "read") else b""
     except URLError:
+        # Return 0 status and empty body for network errors
         return 0, b""
 
 
@@ -60,6 +62,7 @@ def list_github_forks(owner: str, repo: str, token: str | None, max_forks: int) 
         try:
             arr = json.loads(data.decode("utf-8", errors="ignore"))
         except Exception:
+            # Break if JSON parsing fails
             break
         if not isinstance(arr, list) or not arr:
             break
@@ -78,6 +81,7 @@ def github_repo_details(owner: str, repo: str, token: str | None) -> tuple[int, 
             err = json.loads(data.decode("utf-8", errors="ignore"))
             msg = err.get("message", "")
         except Exception:
+            # Use empty message if JSON parsing fails
             msg = ""
         if msg:
             print(f"GitHub API error ({status}) for repo details {owner}/{repo}: {msg}", file=sys.stderr)
@@ -87,6 +91,7 @@ def github_repo_details(owner: str, repo: str, token: str | None) -> tuple[int, 
     try:
         info = json.loads(data.decode("utf-8", errors="ignore"))
     except Exception:
+        # Print error and return None if JSON parsing fails
         print("Failed to parse repository details JSON.", file=sys.stderr)
         return 200, None
     return 200, info
@@ -134,6 +139,7 @@ def fetch_forks_into_repo(
                 run(["git", "fetch", "--force", "--prune", "--tags", uniq_upstream], cwd=repo_dir)
                 print(f"Fetched upstream parent remote '{uniq_upstream}'.", file=sys.stderr)
             except RuntimeError:
+                # Print error if upstream remote operations fail
                 print("Failed to add/fetch upstream parent remote.", file=sys.stderr)
 
     # Discover forks for target and, if available, for parent
@@ -179,6 +185,7 @@ def fetch_forks_into_repo(
             fork_repo_name = f.get("name") or repo
             clone_url = f.get("clone_url") or f.get("ssh_url") or f.get("git_url")
         except Exception:
+            # Skip this fork if data access fails
             continue
         if not clone_url:
             continue

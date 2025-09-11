@@ -28,6 +28,7 @@ def ensure_repo(repo_dir: Path, repo_url: str) -> None:
     try:
         run(["git", "config", "--unset-all", "remote.origin.fetch"], cwd=repo_dir)
     except RuntimeError:
+        # Ignore if remote.origin.fetch doesn't exist
         pass
     run(["git", "config", "--add", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"], cwd=repo_dir)
     run(["git", "config", "--add", "remote.origin.fetch", "+refs/tags/*:refs/tags/*"], cwd=repo_dir)
@@ -56,6 +57,7 @@ def compute_blob_hash_bytes(blob_bytes: bytes) -> str:
         try:
             os.remove(temp_path)
         except OSError:
+            # Ignore if temp file doesn't exist or can't be removed
             pass
 
 
@@ -81,6 +83,7 @@ def discover_paths_by_filename(repo_dir: Path, filename: str) -> List[str]:
     try:
         out = run(["git", "rev-list", "--objects", "--all"], cwd=repo_dir)
     except RuntimeError:
+        # Return empty list if git command fails
         return []
     matches: List[str] = []
     seen = set()
@@ -101,6 +104,7 @@ def file_content_at(repo_dir: Path, commit: str, repo_file_path: str) -> bytes |
         out = run(["git", "show", f"{commit}:{repo_file_path}"], cwd=repo_dir)
         return out.encode()
     except RuntimeError:
+        # Return None if file doesn't exist at this commit
         return None
 
 
@@ -118,6 +122,7 @@ def blob_id_at(repo_dir: Path, commit: str, repo_file_path: str) -> str | None:
             return oid
         return None
     except RuntimeError:
+        # Return None if blob ID cannot be determined
         return None
 
 
@@ -127,6 +132,7 @@ def branches_containing(repo_dir: Path, commit: str) -> List[str]:
         branches = [line.strip() for line in out.splitlines() if line.strip()]
         return branches
     except RuntimeError:
+        # Return empty list if git command fails
         return []
 
 
@@ -135,6 +141,7 @@ def commit_timestamp(repo_dir: Path, commit: str) -> int:
     try:
         return int(out.strip())
     except Exception:
+        # Return 0 if timestamp cannot be parsed
         return 0
 
 
@@ -152,6 +159,7 @@ def existing_remote_names(repo_dir: Path) -> List[str]:
         out = run(["git", "remote"], cwd=repo_dir)
         return [line.strip() for line in out.splitlines() if line.strip()]
     except RuntimeError:
+        # Return empty list if git command fails
         return []
 
 
@@ -161,11 +169,13 @@ def ensure_remote_with_refspec(repo_dir: Path, name: str, url: str) -> None:
         try:
             run(["git", "remote", "set-url", name, url], cwd=repo_dir)
         except RuntimeError:
+            # Ignore if remote doesn't exist
             pass
         # Reset fetch refspecs
         try:
             run(["git", "config", "--unset-all", f"remote.{name}.fetch"], cwd=repo_dir)
         except RuntimeError:
+            # Ignore if remote fetch config doesn't exist
             pass
     else:
         run(["git", "remote", "add", name, url], cwd=repo_dir)
