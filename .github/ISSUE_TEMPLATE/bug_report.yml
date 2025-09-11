@@ -1,0 +1,80 @@
+﻿name: Bug report
+description: Report a bug to help us improve
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-checks
+      options:
+        - label: I searched existing issues and didnt find a match
+          required: true
+        - label: Im using the latest version
+          required: false
+  - type: input
+    id: version
+    attributes:
+      label: Project version
+      placeholder: e.g., 0.1.0
+    validations:
+      required: false
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: e.g., 3.10.14
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Provide minimal steps to reproduce the problem
+      placeholder: |
+        1. Command(s) run
+        2. Expected result
+        3. Actual result
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Command(s) run
+      description: Paste the exact command(s)
+      render: bash
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs/traceback
+      description: Paste relevant logs (redact secrets)
+      render: text
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other details, screenshots, or environment notes

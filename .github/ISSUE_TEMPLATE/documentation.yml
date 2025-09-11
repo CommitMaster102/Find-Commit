@@ -1,0 +1,31 @@
+﻿name: Documentation
+description: Report missing, unclear, or incorrect docs
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - README
+        - Usage/CLI options
+        - Installation
+        - Contributing
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: Affected page/file
+      placeholder: e.g., README.md#usage
+  - type: textarea
+    id: change
+    attributes:
+      label: What needs to change?
+      description: Be precise; include proposed wording if possible
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context

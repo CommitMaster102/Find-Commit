@@ -1,0 +1,31 @@
+﻿name: Chore / Refactor
+description: Propose internal improvements that dont change behavior
+title: "[Chore]: "
+labels: ["chore", "refactor", "needs-triage"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this change needed?
+      placeholder: Reduce complexity, improve maintainability, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed changes
+      description: High-level plan; list affected areas/files
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks/Trade-offs
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: No functional/CLI behavior changes
+        - label: Test coverage will be updated

@@ -1,0 +1,22 @@
+﻿name: Question
+description: Ask a question or request guidance
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      placeholder: What would you like to know?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What youve tried
+      placeholder: Links, commands, and approaches already attempted
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      placeholder: OS, Python version, install method, relevant config

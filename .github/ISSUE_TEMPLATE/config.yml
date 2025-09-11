@@ -1,0 +1,8 @@
+﻿blank_issues_enabled: false
+contact_links:
+  - name: Security policy
+    url: https://github.com/CommitMaster102/Find-Commit/security/policy
+    about: Please review our security policy for reporting vulnerabilities.
+  - name: Q&A / Help
+    url: https://github.com/CommitMaster102/Find-Commit/discussions/new?category=q-a
+    about: Usage questions or troubleshooting help.

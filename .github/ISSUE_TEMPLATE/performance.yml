@@ -1,0 +1,31 @@
+﻿name: Performance issue
+description: Report a performance degradation or resource issue
+title: "[Perf]: "
+labels: ["performance", "needs-triage"]
+body:
+  - type: textarea
+    id: scenario
+    attributes:
+      label: Scenario
+      description: What were you doing when you observed the issue?
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics/symptoms
+      description: CPU, memory, wall time, throughput, etc.
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Baseline vs current
+      description: What is the expected/baseline performance?
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal inputs/data to reproduce
+      render: bash
+  - type: textarea
+    id: profiling
+    attributes:
+      label: Profiling data (if any)
+      description: flamegraphs, cProfile, py-spy, etc.
