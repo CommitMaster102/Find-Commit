@@ -27,7 +27,7 @@ from find_commits_lib import (
     simhash_similarity,
     fetch_forks_into_repo,
 )
-from find_commits_lib.utils import StepTimer, Spinner, AutoProgressBar, StepDisplay, format_timestamp_ms, format_duration_human
+from find_commits_lib.utils import Spinner, AutoProgressBar, StepDisplay, format_timestamp_ms, format_duration_human
 
 
 
