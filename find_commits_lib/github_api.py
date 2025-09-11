@@ -180,7 +180,6 @@ def fetch_forks_into_repo(
     base_remote_names = set(existing_remote_names(repo_dir))
     for f in selected:
         try:
-            fork_full_name = f.get("full_name") or f"{f.get('owner', {}).get('login','')}/{f.get('name','')}"
             owner_login = f.get("owner", {}).get("login") or "fork"
             fork_repo_name = f.get("name") or repo
             clone_url = f.get("clone_url") or f.get("ssh_url") or f.get("git_url")

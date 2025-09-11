@@ -27,7 +27,7 @@ from find_commits_lib import (
     simhash_similarity,
     fetch_forks_into_repo,
 )
-from find_commits_lib.utils import StepTimer, Spinner, format_ms, AutoProgressBar, StepDisplay, format_timestamp_ms, format_duration_human
+from find_commits_lib.utils import StepTimer, Spinner, AutoProgressBar, StepDisplay, format_timestamp_ms, format_duration_human
 
 
 
@@ -412,12 +412,6 @@ def orchestrate(args: argparse.Namespace) -> None:
     timings: dict = {}
     spinner = Spinner(getattr(args, "progress", False))
 
-    def _rec(key: str, dt: float, label: str) -> None:
-        ms = int(round(dt * 1000))
-        timings[key] = ms
-        if getattr(args, "timings", False):
-            duration_human = format_duration_human(ms)
-            print(f"{label} {duration_human}", file=sys.stderr)
 
     _validate_forks_limit_or_exit(args, repo_dir)
 

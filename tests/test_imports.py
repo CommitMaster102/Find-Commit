@@ -1,5 +1,4 @@
 def test_imports():
-    import find_commits_lib as lib  # noqa: F401
     from find_commits_lib import (
         normalize_lf,
         fingerprint_text_for_fuzzy,

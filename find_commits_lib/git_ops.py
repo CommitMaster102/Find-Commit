@@ -3,7 +3,7 @@ import os
 import tempfile
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 
 def run(cmd: List[str], cwd: Path | None = None, input_bytes: bytes | None = None) -> str:

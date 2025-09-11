@@ -4,7 +4,7 @@ import re
 import time
 import stat
 from pathlib import Path
-from typing import Callable, Iterator, Optional
+from typing import Callable, Optional
 from datetime import datetime
 
 

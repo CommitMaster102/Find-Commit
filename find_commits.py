@@ -3,30 +3,11 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 from find_commits_lib import (
-    normalize_lf,
-    ensure_repo,
-    compute_blob_hash_bytes,
-    find_exact_blob_commits,
-    commits_touching_path,
-    discover_paths_by_filename,
-    file_content_at,
-    branches_containing,
-    commit_timestamp,
-    choose_preferred,
-    choose_branch_for_commit,
     default_repo_dir_for,
     cleanup_repo_cache,
-    fingerprint_text_for_fuzzy,
-    jaccard_similarity,
-    minhash_signature,
-    minhash_similarity,
-    simhash64,
-    simhash_similarity,
-    fetch_forks_into_repo,
-) # type: ignore[attr-defined]
+)
 
 
 def main() -> None:
@@ -148,11 +129,13 @@ def main() -> None:
         try:
             print(f"Unexpected error: {e}", file=sys.stderr)
         except Exception:
+            # Ignore errors when printing error message to stderr
             pass
         try:
             repo_dir = Path(args.repo_dir) if args.repo_dir else default_repo_dir_for(args.repo_url)
             cleanup_repo_cache(repo_dir, args.repo_url)
         except Exception:
+            # Ignore errors during cleanup - best effort only
             pass
         sys.exit(1)
 
