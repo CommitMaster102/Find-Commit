@@ -1,0 +1,111 @@
+name: Pull Request Template
+description: Template for Find-Commit pull requests
+title: "[TYPE] Brief description of changes"
+labels: ["needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📝 Pull Request Description
+        
+        ### What does this PR do?
+        <!-- Provide a clear and concise description of what this pull request accomplishes -->
+        
+        ### Type of Change
+        <!-- Mark the relevant option with an "x" -->
+        - [ ] 🐛 Bug fix (non-breaking change which fixes an issue)
+        - [ ] ✨ New feature (non-breaking change which adds functionality)
+        - [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
+        - [ ] 📚 Documentation update
+        - [ ] 🔧 Code refactoring (no functional changes)
+        - [ ] ⚡ Performance improvement
+        - [ ] 🧪 Test improvements
+        - [ ] 🏗️ Build/CI changes
+
+  - type: input
+    id: related-issues
+    attributes:
+      label: Related Issues
+      description: Link any related issues using "Fixes #123" or "Closes #123"
+      placeholder: "Fixes #123, Related to #456"
+
+  - type: checkboxes
+    id: testing
+    attributes:
+      label: Testing
+      description: Test coverage and validation
+      options:
+        - label: I have added tests that prove my fix is effective or that my feature works
+          required: true
+        - label: New and existing unit tests pass locally with my changes
+          required: true
+        - label: I have tested this change locally and it works as expected
+          required: true
+
+  - type: textarea
+    id: test-commands
+    attributes:
+      label: Test Commands
+      description: List the commands you used to test your changes
+      placeholder: |
+        python -m pytest tests/
+        python find_commits.py test_file.txt https://github.com/test/repo.git --timings
+
+  - type: checkboxes
+    id: code-quality
+    attributes:
+      label: Code Quality Checklist
+      description: Ensure code meets project standards
+      options:
+        - label: My code follows the project's coding standards
+          required: true
+        - label: I have performed a self-review of my own code
+          required: true
+        - label: I have commented my code, particularly in hard-to-understand areas
+          required: false
+        - label: My changes generate no new warnings or errors
+          required: true
+        - label: I have added/updated docstrings for any new functions or classes
+          required: false
+
+  - type: checkboxes
+    id: documentation
+    attributes:
+      label: Documentation
+      description: Documentation updates
+      options:
+        - label: I have updated the README.md if necessary
+          required: false
+        - label: I have updated any relevant docstrings
+          required: false
+        - label: I have added comments explaining complex logic
+          required: false
+
+  - type: checkboxes
+    id: git-workflow
+    attributes:
+      label: Git & Dependencies
+      description: Git workflow and dependency management
+      options:
+        - label: My branch is up to date with the main branch
+          required: true
+        - label: I have resolved any merge conflicts
+          required: true
+        - label: I have not introduced any new dependencies without updating pyproject.toml
+          required: true
+        - label: I have run black, isort, and flake8 on my code
+          required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Any other context about the pull request
+      placeholder: Screenshots, performance impact, breaking changes, etc.
+
+  - type: textarea
+    id: reviewer-notes
+    attributes:
+      label: Reviewer Notes
+      description: Any specific areas you'd like reviewers to focus on
+      placeholder: Any specific areas you'd like reviewers to focus on

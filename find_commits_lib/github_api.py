@@ -140,7 +140,7 @@ def fetch_forks_into_repo(
     owner, repo = parsed
 
     # Always try to fetch repo details; if it's a fork, prefer parent for fork discovery
-    status, info = github_repo_details(owner, repo, token)
+    _, info = github_repo_details(owner, repo, token)
     parent_owner = None
     parent_repo = None
     if info and bool(info.get("fork")) and isinstance(info.get("parent"), dict):
