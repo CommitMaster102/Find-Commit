@@ -101,8 +101,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install safety bandit
 
-    - name: 🔒 Run safety check
-      run: safety scan
+    - name: 🔒 Run safety scan
+      run: safety scan --output screen
 
     - name: 🛡️ Run bandit security linter
       run: bandit -r find_commits_lib/ -f json -o bandit-report.json || true
