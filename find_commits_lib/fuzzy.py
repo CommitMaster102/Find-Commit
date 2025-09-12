@@ -42,9 +42,9 @@ _UINT64_MASK = (1 << 64) - 1
 def _stable_hash64(s: str) -> int:
     """Deterministic 64-bit hash for strings (stable across runs/OS).
 
-    Uses SHA-1 and takes the first 8 bytes as a big-endian integer.
+    Uses SHA-1 (non-cryptographic) and takes the first 8 bytes as a big-endian integer.
     """
-    h = hashlib.sha1(s.encode("utf-8", errors="ignore")).digest()
+    h = hashlib.sha1(s.encode("utf-8", errors="ignore"), usedforsecurity=False).digest()
     return int.from_bytes(h[:8], "big", signed=False)
 
 
