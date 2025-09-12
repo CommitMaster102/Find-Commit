@@ -325,9 +325,10 @@ def _write_env_file(
     timings: dict
 ) -> None:
     fast_mode = getattr(args, "fast", False)
+    candidates_str = '\t\n'.join(candidates)
     env_lines = [
         f"PREFERRED_COMMIT={preferred}",
-        f"CANDIDATE_COMMITS= -> \n\"{'\t\n'.join(candidates)}\"",
+        f"CANDIDATE_COMMITS= -> \n\"{candidates_str}\"",
         f"MATCH_MODE={mode}",
     ]
     try:
