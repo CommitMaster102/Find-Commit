@@ -23,10 +23,10 @@ from find_commits_lib import (
     minhash_signature,
     minhash_similarity,
     normalize_lf,
+    selection,
     simhash64,
     simhash_similarity,
 )
-from find_commits_lib import selection
 from find_commits_lib.utils import (
     AutoProgressBar,
     Spinner,
