@@ -85,6 +85,7 @@ def test_shallow_clone_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestration may terminate early with sys.exit during tests
                 pass
 
             # Verify that shallow clone was enabled
@@ -176,6 +177,7 @@ def test_selective_fetch_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestration may terminate early with sys.exit during tests
                 pass
 
             # Verify that selective fetch was enabled
@@ -265,6 +267,7 @@ def test_parallel_fetch_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestration may terminate early with sys.exit during tests
                 pass
 
             # Verify that parallel fetch was enabled
@@ -354,6 +357,7 @@ def test_combined_clone_modes():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestration may terminate early with sys.exit during tests
                 pass
 
             # Verify that all modes were enabled
@@ -449,6 +453,7 @@ def test_fast_mode_enables_clone_optimizations():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestration may terminate early with sys.exit during tests
                 pass
 
             # Verify that fast mode enabled clone optimizations

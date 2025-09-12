@@ -85,6 +85,7 @@ def test_fast_mode_flag_application():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestrate can call sys.exit on validation or early termination in tests
                 pass
 
             # Verify that fast mode optimizations were applied

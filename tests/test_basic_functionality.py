@@ -134,6 +134,7 @@ def test_fast_mode_optimizations():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The orchestrate entrypoint may call sys.exit for control flow in tests
                 pass
 
             # Verify that fast mode optimizations were applied

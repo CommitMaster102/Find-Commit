@@ -168,7 +168,9 @@ def main() -> None:
 
 
 def inner(args: argparse.Namespace) -> None:
-    from find_commits_lib.core import orchestrate as _inner
+    # Import the callable directly from the submodule to avoid importing
+    # the module object itself (which would be non-callable).
+    from find_commits_lib.core.orchestrate import orchestrate as _inner
 
     _inner(args)
 

@@ -90,6 +90,7 @@ def test_jaccard_similarity_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestrate may call sys.exit in these mocked flows; ignore in tests
                 pass
 
             # Verify that jaccard mode was used
@@ -174,6 +175,7 @@ def test_minhash_similarity_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestrate may call sys.exit in these mocked flows; ignore in tests
                 pass
 
             # Verify that minhash mode was used
@@ -259,6 +261,7 @@ def test_simhash_similarity_mode():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Orchestrate may call sys.exit in these mocked flows; ignore in tests
                 pass
 
             # Verify that simhash mode was used

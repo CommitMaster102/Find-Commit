@@ -90,6 +90,7 @@ def test_progress_mode_enabled():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The CLI-style orchestrate can exit intentionally; swallow in tests
                 pass
 
             # Verify that progress was enabled
@@ -172,6 +173,7 @@ def test_timing_mode_enabled():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The CLI-style orchestrate can exit intentionally; swallow in tests
                 pass
 
             # Verify that timings were enabled
@@ -254,6 +256,7 @@ def test_both_progress_and_timing_enabled():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The CLI-style orchestrate can exit intentionally; swallow in tests
                 pass
 
             # Verify that both modes were enabled
@@ -337,6 +340,7 @@ def test_fast_mode_disables_progress_and_timing():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The CLI-style orchestrate can exit intentionally; swallow in tests
                 pass
 
             # Verify that fast mode disabled progress and timing
@@ -518,6 +522,7 @@ def test_progress_bar_integration():
             try:
                 orchestrate(args)
             except SystemExit:
+                # The CLI-style orchestrate can exit intentionally; swallow in tests
                 pass
 
             # Verify that progress was enabled throughout
