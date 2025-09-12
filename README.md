@@ -1,8 +1,49 @@
-# Find commits
+<div align="center">
 
-A small utility to find Git commits in a repository that contain the exact contents of a local file, with optional fuzzy matching and GitHub forks discovery.
+# 🔎 Find-Commit
 
-## Usage
+*A small CLI to locate the Git commit(s) that contain the exact (or near-exact) contents of a local file and optionally across a repository’s forks.*
+
+<!-- Badges -->
+<a href="https://github.com/CommitMaster102/Find-Commit/blob/main/LICENSE">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+</a>
+<a href="https://www.python.org/">
+  <img alt="Python" src="https://img.shields.io/badge/Python-%E2%89%A53.10-3776AB?logo=python&logoColor=white">
+</a>
+<img alt="OS" src="https://img.shields.io/badge/OS-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey">
+<a href="https://github.com/CommitMaster102/Find-Commit/stargazers">
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/CommitMaster102/Find-Commit?logo=github">
+</a>
+</div>
+
+---
+
+## ✨ Features
+
+- **Exact blob match** search across the repo’s history.
+- **Fallback approximate** matching (Jaccard, MinHash, SimHash) when no exact blob is found.
+- **Fork discovery** (optional) to look across GitHub forks under rate limits.
+- **Actionable report** + `.env` output with timing breakdowns.
+- **Fast paths**: shallow/selective fetch and parallel operations for speed.
+
+---
+
+## 🚀 Quickstart
+
+```bash
+# Clone and run
+git clone https://github.com/CommitMaster102/Find-Commit.git
+cd Find-Commit
+python find_commits.py <local_file> <repo_url> --timings
+````
+
+> **Requirements:** Python ≥ 3.10 and Git available on your PATH.
+> **Tip:** For GitHub API calls (fork discovery), set `GITHUB_TOKEN` to raise rate limits.
+
+---
+
+## 🧭 Usage
 
 ```bash
 python find_commits.py <local_file> <repo_url> \
@@ -11,79 +52,140 @@ python find_commits.py <local_file> <repo_url> \
   [--include-forks] [--github-token TOKEN] [--forks-limit N] [--forks-offset N] \
   [--similarity-mode {jaccard,minhash,simhash}] [--similarity-threshold FLOAT] \
   [--shingle-size INT] [--minhash-perm INT] \
-  [--progress] [--timings]
+  [--progress] [--timings] \
+  [--shallow] [--depth INT] [--selective] [--parallel-fetch] [--fast]
 ```
 
-Outputs a recommended commit and writes a report (find_commits.txt) and an env file (find_commits.env).
+**Outputs:** a recommended commit in the terminal and two files:
 
-## Options
+* `find_commits.txt` — human-readable report
+* `find_commits.env` — env-style key/values (timings, etc.)
 
-- local_file: Path to the local file to match, or '-' to read from stdin.
-- repo_url: Git repository URL (e.g., https://github.com/org/repo.git).
-- --repo-dir DIR: Directory for local clone/cache. Defaults to `.repo_<name>` in CWD.
-- --repo-file-path PATH: Hint path inside the repo for fallback scan when no exact blob match is found.
-- --out-env PATH: Path to write env variables file. Default: `find_commits.env`.
-- --out-report PATH: Path to write text report. Default: `find_commits.txt`.
-- --include-forks: If set, discover GitHub forks and fetch their refs before searching.
-- --github-token TOKEN: GitHub token (or set `GITHUB_TOKEN`) to raise API rate limits.
-- --forks-limit N: Max forks to fetch when `--include-forks` is set. Default: 20 (1-99).
-- --forks-offset N: Offset into the deduplicated forks list before selecting. Default: 0.
-- --similarity-mode {jaccard,minhash,simhash}: Fallback similarity algorithm. Default: `jaccard`.
-- --similarity-threshold FLOAT: Threshold in [0,1] for selecting candidates in fallback mode. Default: 0.92.
-- --shingle-size INT: Token shingle size k for jaccard/minhash. Default: 5.
-- --minhash-perm INT: Number of permutations for MinHash. Default: 128.
-- --progress: Show a simple spinner during long steps.
-- --timings: Print per-step timings to the terminal (always written to report and env).
+---
 
-Notes:
-- The tool first searches for exact blob matches. Only if none are found does it scan commits touching candidate paths and apply the chosen similarity mode.
-- A fast exact check is used during fallback via blob-id resolution to avoid unnecessary content reads.
+## ⚙️ Options (at a glance)
 
-## Timings
+| Option                   | Type / Values                       |            Default | Description                                                |
+| ------------------------ | ----------------------------------- | -----------------: | ---------------------------------------------------------- |
+| `local_file`             | path or `-`                         |                  — | File to match (use `-` to read from `stdin`).              |
+| `repo_url`               | URL                                 |                  — | Target Git repo, e.g., `https://github.com/org/repo.git`.  |
+| `--repo-dir`             | path                                |     `.repo_<name>` | Local clone/cache directory.                               |
+| `--repo-file-path`       | path                                |                  — | Hint path inside repo for fallback scan.                   |
+| `--out-env`              | path                                | `find_commits.env` | Where to write env output.                                 |
+| `--out-report`           | path                                | `find_commits.txt` | Where to write the report.                                 |
+| `--include-forks`        | flag                                |                off | Discover & fetch GitHub forks before searching.            |
+| `--github-token`         | string                              |    `$GITHUB_TOKEN` | Token to raise API rate limits.                            |
+| `--forks-limit`          | int \[1–99]                         |               `20` | Max forks to fetch when including forks.                   |
+| `--forks-offset`         | int                                 |                `0` | Offset into de-duplicated fork list.                       |
+| `--similarity-mode`      | `jaccard` \| `minhash` \| `simhash` |          `jaccard` | Fallback similarity algorithm.                             |
+| `--similarity-threshold` | float \[0,1]                        |             `0.92` | Selection threshold in fallback mode.                      |
+| `--shingle-size`         | int                                 |                `5` | Token shingle size for Jaccard/MinHash.                    |
+| `--minhash-perm`         | int                                 |              `128` | Number of permutations for MinHash.                        |
+| `--progress`             | flag                                |                off | Simple spinner/progress indicators.                        |
+| `--timings`              | flag                                |                off | Print per-step timings to terminal.                        |
+| `--shallow`              | flag                                |                off | Shallow clone for faster download (may miss some commits). |
+| `--depth`                | int                                 |                `1` | Depth for shallow clone.                                   |
+| `--selective`            | flag                                |                off | Fetch main branch + tags only.                             |
+| `--parallel-fetch`       | flag                                |                off | Parallel fetching (experimental).                          |
+| `--fast`                 | flag                                |                off | Shortcut: shallow + minimal fetching + no progress bars.   |
 
-- Per-step timings (milliseconds) are recorded and output to:
-  - Terminal (when `--timings` is provided)
-  - Report (`find_commits.txt`) as lines like `prepare_repo_ms=1234`
-  - Env file (`find_commits.env`) as uppercase keys like `PREPARE_REPO_MS=1234`
+> **Notes:** The tool first searches for exact blob matches. If none are found, it scans commits touching candidate paths and applies the chosen similarity mode. During fallback, a quick blob-id check avoids unnecessary content reads.
+
+---
+
+## ⏱ Timings
+
+When `--timings` is used, per-step durations (milliseconds) are:
+
+* Printed to the terminal,
+* Written to `find_commits.txt` as `prepare_repo_xx=1234`,
+* Written to `find_commits.env` as `PREPARE_REPO_XX=1234`.
+
 - Recorded keys may include:
-  - `prepare_repo_ms`, `fetch_forks_ms`, `compute_local_blobs_ms`, `search_exact_ms`,
-    `collect_touches_ms`, `evaluate_candidates_ms`, `choose_preferred_ms`, `write_report_ms`,
-    `write_env_ms`, `cleanup_ms`, `total_ms`
+  - `read_local_file_ms`, `prepare_repo_ms`, `fetch_forks_ms`, `compute_local_blobs_ms`,
+    `search_exact_ms`, `build_candidate_paths_ms`, `collect_touches_ms`, `prepare_fingerprints_ms`,
+    `evaluate_candidates_ms`, `apply_fuzzy_threshold_ms`, `process_candidates_ms`,
+    `choose_preferred_ms`, `write_report_ms`, `write_env_ms`, `cleanup_ms`, `total_ms`
+  - Each timing key also has corresponding `_start` and `_end` timestamps
 
-## Examples
+---
 
-Basic exact search:
+## 📦 Examples
+
+**Basic exact search**
+
 ```bash
 python find_commits.py path/to/local/file.txt https://github.com/org/repo.git --timings
 ```
 
-Read file content from stdin:
+**Read file from stdin**
+
 ```bash
+# Windows (PowerShell)
 type path\to\local\file.txt | python find_commits.py - https://github.com/org/repo.git --timings
+
+# Unix
+cat path/to/local/file.txt | python find_commits.py - https://github.com/org/repo.git --timings
 ```
 
-Provide an explicit repo path hint for fallback:
+**Provide an explicit repo path hint for fallback**
+
 ```bash
 python find_commits.py file.txt https://github.com/org/repo.git --repo-file-path src/file.txt --timings
 ```
 
-Include forks with token and selection window:
+**Include forks with token and selection window**
+
 ```bash
-python find_commits.py file.txt https://github.com/org/repo.git --include-forks --github-token %GITHUB_TOKEN% --forks-limit 30 --forks-offset 10 --timings
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --include-forks --github-token "$GITHUB_TOKEN" --forks-limit 30 --forks-offset 10 --timings
 ```
 
-Use MinHash for faster approximate matching:
+**Use MinHash for faster approximate matching**
+
 ```bash
-python find_commits.py file.txt https://github.com/org/repo.git --similarity-mode minhash --similarity-threshold 0.9 --shingle-size 5 --minhash-perm 128 --timings --progress
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --similarity-mode minhash --similarity-threshold 0.9 --shingle-size 5 --minhash-perm 128 --timings --progress
 ```
 
-Use SimHash for near-duplicate detection:
+**Use SimHash for near-duplicate detection**
+
 ```bash
-python find_commits.py file.txt https://github.com/org/repo.git --similarity-mode simhash --similarity-threshold 0.9 --timings --progress
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --similarity-mode simhash --similarity-threshold 0.9 --timings --progress
 ```
 
-Customize output paths and repo cache directory:
+**Customize output paths & repo cache directory**
+
 ```bash
-python find_commits.py file.txt https://github.com/org/repo.git --repo-dir .repo_tmp --out-report report.txt --out-env env.out --timings
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --repo-dir .repo_tmp --out-report report.txt --out-env env.out --timings
 ```
 
+**Shallow clone for faster initial download**
+
+```bash
+python find_commits.py file.txt https://github.com/org/repo.git --shallow --depth 10 --timings
+```
+
+**Fast mode for quick execution**
+
+```bash
+python find_commits.py file.txt https://github.com/org/repo.git --fast --timings
+```
+
+**Selective fetching for better performance**
+
+```bash
+python find_commits.py file.txt https://github.com/org/repo.git --selective --parallel-fetch --timings
+```
+
+---
+
+## 🛠 How it works
+
+1. **Prepare repo** — clone/update a cached working copy (optionally shallow/selective).
+2. **Compute local blob(s)** — normalize line endings and compute blob IDs for the local file.
+3. **Exact search** — try to resolve exact blob matches quickly across reachable refs.
+4. **Fallback** — if no exact match: identify candidate paths, scan touching commits, and score with the selected similarity algorithm (Jaccard/MinHash/SimHash).
+5. **Choose preferred** — pick the most likely commit, then write the report and env outputs.
