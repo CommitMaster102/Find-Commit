@@ -55,7 +55,9 @@ def _get_minhash_params(num_perm: int) -> tuple[list[int], list[int]]:
     """
     if num_perm in _MINHASH_PARAMS_CACHE:
         return _MINHASH_PARAMS_CACHE[num_perm]
-    rnd = random.Random(0xC0FFEE)
+    # Use deterministic seed for consistent MinHash parameters
+    # This is not for cryptographic purposes but for consistent hashing
+    rnd = random.Random(42)  # nosec B311 - deterministic seed for consistent hashing, not crypto
     a: list[int] = []
     b: list[int] = []
     for _ in range(num_perm):

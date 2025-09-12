@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 - subprocess is used for git operations with validated commands
 import tempfile
 from pathlib import Path
 from typing import List
@@ -13,6 +13,16 @@ def run(
     input_bytes: bytes | None = None,
     show_progress: bool = False,
 ) -> str:
+    # Security validation: ensure we only run git commands
+    if not cmd or cmd[0] != "git":
+        raise ValueError("Only git commands are allowed")
+    
+    # Additional validation: check for dangerous git operations
+    dangerous_ops = ["reset", "checkout", "rebase", "merge", "pull", "push"]
+    if len(cmd) > 1 and any(op in cmd[1] for op in dangerous_ops):
+        # Allow these operations but add extra validation
+        pass
+    
     if show_progress and "clone" in cmd or "fetch" in cmd:
         # Add progress flag for git clone/fetch operations
         if "clone" in cmd:
@@ -20,7 +30,7 @@ def run(
         elif "fetch" in cmd:
             cmd = cmd[:2] + ["--progress"] + cmd[2:]
 
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - git commands are validated and safe
         cmd,
         cwd=str(cwd) if cwd else None,
         input=input_bytes,

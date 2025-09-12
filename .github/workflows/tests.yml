@@ -135,11 +135,11 @@ jobs:
           name: safety-report
           path: safety-report.json
 
-      - name: 🛡️ Bandit (fail on HIGH/HIGH)
+      - name: 🛡️ Bandit (fail on MEDIUM+/MEDIUM+)
         run: |
           bandit -q -r find_commits_lib/ \
-            --severity-level high \
-            --confidence-level high
+            --severity-level medium \
+            --confidence-level medium
 
       - name: 🛡️ Bandit (SARIF for code scanning)
         if: always()

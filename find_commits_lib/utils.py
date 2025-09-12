@@ -47,8 +47,9 @@ def force_remove_dir(path: Path) -> None:
         try:
             os.chmod(p, stat.S_IWRITE)
             func(p)
-        except Exception:
+        except (OSError, PermissionError) as e:
             # Ignore errors when trying to change file permissions
+            # This is expected on some systems or when files are in use
             pass
 
     for _ in range(3):
@@ -74,8 +75,9 @@ def cleanup_repo_cache(repo_dir: Path, repo_url: str) -> None:
             force_remove_dir(repo_dir)
         else:
             force_remove_dir(default_dir)
-    except Exception:
+    except (OSError, PermissionError) as e:
         # Ignore errors during cache cleanup - best effort only
+        # This is expected when cache directories are in use or inaccessible
         pass
 
 
@@ -95,8 +97,9 @@ class Spinner:
             self._idx += 1
             msg = f"\r[{frame}] {label}"
             os.write(2, msg.encode("utf-8", errors="ignore"))
-        except Exception:
+        except (OSError, BrokenPipeError) as e:
             # Ignore errors when writing to stderr (if stderr is closed)
+            # This is expected when stderr is redirected or closed
             pass
 
     def clear(self) -> None:
@@ -104,8 +107,9 @@ class Spinner:
             return
         try:
             os.write(2, b"\r\x1b[K")
-        except Exception:
+        except (OSError, BrokenPipeError) as e:
             # Ignore errors when clearing stderr (if stderr is closed)
+            # This is expected when stderr is redirected or closed
             pass
 
 
@@ -210,8 +214,9 @@ class AutoProgressBar:
 
             self._threading = threading
             self._lock = threading.Lock()
-        except Exception:
+        except (ImportError, OSError) as e:
             # Disable progress bar if threading is not available
+            # This can happen in some restricted environments
             self.enabled = False
 
     def _ellipsize_middle(self, text: str, max_len: int) -> str:
@@ -297,8 +302,9 @@ class AutoProgressBar:
             os.write(2, out.encode("utf-8", errors="ignore"))
             # Track last len to clear if needed when stopping
             self._last_len = len(line)
-        except Exception:
+        except (OSError, BrokenPipeError) as e:
             # Ignore errors when drawing progress bar (if stderr is closed)
+            # This is expected when stderr is redirected or closed
             pass
 
     def _run(self) -> None:
@@ -309,8 +315,9 @@ class AutoProgressBar:
                     if self._total <= 0:
                         self._pulse = (self._pulse + 1) % (self._bar_w + 1)
                 time.sleep(0.3)  # Slower animation
-        except Exception:
+        except (OSError, BrokenPipeError) as e:
             # Ignore errors in progress bar animation thread
+            # This is expected when stderr is redirected or closed
             pass
 
     def start(self, label: str) -> None:
@@ -326,8 +333,9 @@ class AutoProgressBar:
                 self._stop = False
                 self._thread = self._threading.Thread(target=self._run, daemon=True)  # type: ignore[attr-defined]
                 self._thread.start()
-        except Exception:
+        except (OSError, RuntimeError) as e:
             # Ignore errors when starting progress bar thread
+            # This can happen if threading is not available or thread creation fails
             pass
 
     def update(self, current: int, total: int, label: Optional[str] = None) -> None:
@@ -339,8 +347,9 @@ class AutoProgressBar:
                     self._label = label
                 self._current = current
                 self._total = total
-        except Exception:
+        except (OSError, RuntimeError) as e:
             # Ignore errors when updating progress bar
+            # This can happen if threading is not available or thread operations fail
             pass
 
     def stop(self) -> None:
@@ -350,14 +359,16 @@ class AutoProgressBar:
             self._stop = True
             if self._thread:
                 self._thread.join(timeout=0.3)
-        except Exception:
+        except (OSError, RuntimeError) as e:
             # Ignore errors when stopping progress bar thread
+            # This can happen if threading is not available or thread operations fail
             pass
         # Clear line to ensure next prints start cleanly
         try:
             os.write(2, b"\r\x1b[K")
-        except Exception:
+        except (OSError, BrokenPipeError) as e:
             # Ignore errors when clearing stderr after stopping progress bar
+            # This is expected when stderr is redirected or closed
             pass
         self._thread = None
 
@@ -410,8 +421,9 @@ class StepDisplay:
                         "utf-8", errors="ignore"
                     ),
                 )
-            except Exception:
+            except (OSError, BrokenPipeError) as e:
                 # Ignore errors when writing timing info to stderr
+                # This is expected when stderr is redirected or closed
                 pass
         return False
 
@@ -441,7 +453,8 @@ class StepTimer:
             self.spinner.clear()
         try:
             self.on_done(self.name, dt)
-        except Exception:
+        except (OSError, RuntimeError) as e:
             # Ignore errors in step timer callback
+            # This can happen if threading is not available or callback fails
             pass
         return False

@@ -38,6 +38,10 @@ def parse_github_owner_repo(repo_url: str) -> Tuple[str, str] | None:
 
 
 def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
+    # Security validation: only allow HTTPS URLs
+    if not url.startswith("https://"):
+        raise ValueError("Only HTTPS URLs are allowed for security")
+    
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "find-commits-script",
@@ -47,7 +51,7 @@ def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
         headers["Authorization"] = f"Bearer {token}"
     req = Request(url, headers=headers)
     try:
-        with urlopen(req, timeout=30) as resp:
+        with urlopen(req, timeout=30) as resp:  # nosec B310 - URL scheme is validated above
             status = getattr(resp, "status", 200)
             data = resp.read()
             return status, data
@@ -225,8 +229,9 @@ def fetch_forks_into_repo(
             owner_login = f.get("owner", {}).get("login") or "fork"
             fork_repo_name = f.get("name") or repo
             clone_url = f.get("clone_url") or f.get("ssh_url") or f.get("git_url")
-        except Exception:
-            # Skip this fork if data access fails
+        except (KeyError, AttributeError, TypeError) as e:
+            # Skip this fork if data access fails due to malformed data
+            print(f"Warning: Skipping fork due to data access error: {e}")
             continue
         if not clone_url:
             continue
