@@ -158,7 +158,11 @@ def main() -> None:
             # Ignore errors when printing error message to stderr
             pass
         try:
-            repo_dir = Path(args.repo_dir) if args.repo_dir else default_repo_dir_for(args.repo_url)
+            repo_dir = (
+                Path(args.repo_dir)
+                if args.repo_dir
+                else default_repo_dir_for(args.repo_url)
+            )
             cleanup_repo_cache(repo_dir, args.repo_url)
         except Exception:
             # Ignore errors during cleanup - best effort only
@@ -168,6 +172,7 @@ def main() -> None:
 
 def inner(args: argparse.Namespace) -> None:
     from find_commits_lib.core import orchestrate as _inner
+
     _inner(args)
 
 

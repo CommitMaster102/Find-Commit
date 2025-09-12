@@ -128,43 +128,51 @@ def format_duration_human(ms: int) -> str:
     """Format milliseconds as human-readable duration.
 
     For zero duration, return a semantic message indicating that the step wasn't applied or run.
-    """ 
+    """
     if ms <= 0:
         return "wasn't applied or run"
     if ms < 1000:
         return f"Took {ms} milliseconds"
-    
+
     seconds = ms // 1000
     remaining_ms = ms % 1000
-    
+
     if seconds < 60:
         if remaining_ms == 0:
             return f"Took {seconds} seconds"
         else:
             return f"Took {seconds} seconds and {remaining_ms} milliseconds"
-    
+
     minutes = seconds // 60
     remaining_seconds = seconds % 60
-    
+
     if minutes < 60:
         parts = [f"Took {minutes} minute{'s' if minutes != 1 else ''}"]
         if remaining_seconds > 0:
-            parts.append(f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}")
+            parts.append(
+                f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}"
+            )
         if remaining_ms > 0:
-            parts.append(f"{remaining_ms} millisecond{'s' if remaining_ms != 1 else ''}")
+            parts.append(
+                f"{remaining_ms} millisecond{'s' if remaining_ms != 1 else ''}"
+            )
         if len(parts) == 2:
             return " and ".join(parts)
         else:
             return ", ".join(parts[:-1]) + f", and {parts[-1]}"
-    
+
     hours = minutes // 60
     remaining_minutes = minutes % 60
-    
+
     parts = [f"Took {hours} hour{'s' if hours != 1 else ''}"]
     if remaining_minutes > 0:
-        parts.append(f"{remaining_minutes} minute{'s' if remaining_minutes != 1 else ''}")
+        parts.append(
+            f"{remaining_minutes} minute{'s' if remaining_minutes != 1 else ''}"
+        )
     if remaining_seconds > 0:
-        parts.append(f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}")
+        parts.append(
+            f"{remaining_seconds} second{'s' if remaining_seconds != 1 else ''}"
+        )
     if remaining_ms > 0:
         parts.append(f"{remaining_ms} millisecond{'s' if remaining_ms != 1 else ''}")
     if len(parts) == 2:
@@ -199,6 +207,7 @@ class AutoProgressBar:
         self._bar_w = int(os.environ.get("PROGRESS_BAR_WIDTH", "60") or 60)
         try:
             import threading
+
             self._threading = threading
             self._lock = threading.Lock()
         except Exception:
@@ -269,8 +278,18 @@ class AutoProgressBar:
             if total <= 0:
                 bar_visual = "[" + (" " * left_pad) + status + (" " * right_pad) + "]"
             else:
-                bar_visual = "[" + (self.BAR_CHAR * filled) + (self.EMPTY_CHAR * (self._bar_w - filled)) + "]"
-            percent = int(round(100 * (0 if total <= 0 else min(1.0, max(0.0, current / float(total))))))
+                bar_visual = (
+                    "["
+                    + (self.BAR_CHAR * filled)
+                    + (self.EMPTY_CHAR * (self._bar_w - filled))
+                    + "]"
+                )
+            percent = int(
+                round(
+                    100
+                    * (0 if total <= 0 else min(1.0, max(0.0, current / float(total))))
+                )
+            )
             pct_field = f" {percent:3d}%" if total > 0 else ""
             line = f"{label_visual}{' ' * label_pad}  {bar_visual}{pct_field}"
             # Erase and draw on stderr
@@ -346,7 +365,14 @@ class AutoProgressBar:
 class StepDisplay:
     """Context manager: animate progress and record timings + wall timestamps."""
 
-    def __init__(self, step_key: str, pretty_label: str, timings: dict, progress: AutoProgressBar, print_to_stderr: bool) -> None:
+    def __init__(
+        self,
+        step_key: str,
+        pretty_label: str,
+        timings: dict,
+        progress: AutoProgressBar,
+        print_to_stderr: bool,
+    ) -> None:
         self.step_key = step_key
         self.pretty_label = pretty_label
         self.timings = timings
@@ -378,7 +404,12 @@ class StepDisplay:
                 duration_human = format_duration_human(ms)
                 # Ensure clean line before printing timing
                 os.write(2, b"\r\x1b[K")
-                os.write(2, f"{self.pretty_label} {duration_human}\n".encode("utf-8", errors="ignore"))
+                os.write(
+                    2,
+                    f"{self.pretty_label} {duration_human}\n".encode(
+                        "utf-8", errors="ignore"
+                    ),
+                )
             except Exception:
                 # Ignore errors when writing timing info to stderr
                 pass
@@ -388,7 +419,12 @@ class StepDisplay:
 class StepTimer:
     """Context manager to time steps with ms precision."""
 
-    def __init__(self, name: str, on_done: Callable[[str, float], None], spinner: Spinner | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        on_done: Callable[[str, float], None],
+        spinner: Spinner | None = None,
+    ) -> None:
         self.name = name
         self.on_done = on_done
         self.spinner = spinner
@@ -409,5 +445,3 @@ class StepTimer:
             # Ignore errors in step timer callback
             pass
         return False
-
-

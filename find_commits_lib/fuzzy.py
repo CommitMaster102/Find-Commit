@@ -30,6 +30,7 @@ def jaccard_similarity(a: set[str], b: set[str]) -> float:
     union = len(a | b)
     return inter / union if union else 0.0
 
+
 # ----------------------
 # MinHash (Jaccard LSH)
 # ----------------------
@@ -76,7 +77,7 @@ def minhash_signature(shingles: set[str], num_perm: int = 128) -> list[int]:
     if not shingles:
         return [0] * num_perm
     a, b = _get_minhash_params(num_perm)
-    signature = [(_UINT64_MASK)] * num_perm
+    signature = [_UINT64_MASK] * num_perm
     for sh in shingles:
         x = _stable_hash64(sh)
         for i in range(num_perm):
@@ -107,6 +108,7 @@ def minhash_similarity(sig_a: list[int], sig_b: list[int]) -> float:
 # SimHash (64-bit)
 # ---------------
 
+
 def simhash64_from_tokens(tokens: List[str]) -> int:
     """Compute 64-bit SimHash from a list of tokens (with unit weights)."""
     if not tokens:
@@ -122,7 +124,7 @@ def simhash64_from_tokens(tokens: List[str]) -> int:
     out = 0
     for bit in range(64):
         if accum[bit] > 0:
-            out |= (1 << bit)
+            out |= 1 << bit
     return out
 
 
@@ -137,6 +139,3 @@ def _hamming_distance64(a: int, b: int) -> int:
 def simhash_similarity(a: int, b: int) -> float:
     """Return similarity in [0,1] as 1 - HammingDistance/64."""
     return 1.0 - (_hamming_distance64(a, b) / 64.0)
-
-
-

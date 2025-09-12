@@ -5,7 +5,12 @@ from typing import List, Tuple
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 from pathlib import Path
-from find_commits_lib.git_ops import existing_remote_names, ensure_remote_with_refspec, run, sanitize_remote_name
+from find_commits_lib.git_ops import (
+    existing_remote_names,
+    ensure_remote_with_refspec,
+    run,
+    sanitize_remote_name,
+)
 
 
 def parse_github_owner_repo(repo_url: str) -> Tuple[str, str] | None:
@@ -19,7 +24,11 @@ def parse_github_owner_repo(repo_url: str) -> Tuple[str, str] | None:
     Returns (owner, repo) or None if not a GitHub URL.
     """
     cleaned = repo_url.strip()
-    m = re.search(r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?(?:[#?].*)?$", cleaned, flags=re.IGNORECASE)
+    m = re.search(
+        r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?(?:[#?].*)?$",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
     if not m:
         return None
     owner = m.group(1)
@@ -49,7 +58,9 @@ def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
         return 0, b""
 
 
-def list_github_forks(owner: str, repo: str, token: str | None, max_forks: int) -> List[dict]:
+def list_github_forks(
+    owner: str, repo: str, token: str | None, max_forks: int
+) -> List[dict]:
     """List forks via GitHub API, up to max_forks. Returns list of JSON dicts."""
     forks: List[dict] = []
     per_page = 100
@@ -73,7 +84,9 @@ def list_github_forks(owner: str, repo: str, token: str | None, max_forks: int) 
     return forks[:max_forks]
 
 
-def github_repo_details(owner: str, repo: str, token: str | None) -> tuple[int, dict | None]:
+def github_repo_details(
+    owner: str, repo: str, token: str | None
+) -> tuple[int, dict | None]:
     url = f"https://api.github.com/repos/{owner}/{repo}"
     status, data = github_api_get(url, token)
     if status != 200:
@@ -84,9 +97,15 @@ def github_repo_details(owner: str, repo: str, token: str | None) -> tuple[int, 
             # Use empty message if JSON parsing fails
             msg = ""
         if msg:
-            print(f"GitHub API error ({status}) for repo details {owner}/{repo}: {msg}", file=sys.stderr)
+            print(
+                f"GitHub API error ({status}) for repo details {owner}/{repo}: {msg}",
+                file=sys.stderr,
+            )
         else:
-            print(f"GitHub API error ({status}) for repo details {owner}/{repo}.", file=sys.stderr)
+            print(
+                f"GitHub API error ({status}) for repo details {owner}/{repo}.",
+                file=sys.stderr,
+            )
         return status, None
     try:
         info = json.loads(data.decode("utf-8", errors="ignore"))
@@ -106,7 +125,10 @@ def fetch_forks_into_repo(
 ) -> Tuple[int, int, int]:
     parsed = parse_github_owner_repo(repo_url)
     if not parsed:
-        print("--include-forks specified, but repository is not a GitHub URL; skipping forks.", file=sys.stderr)
+        print(
+            "--include-forks specified, but repository is not a GitHub URL; skipping forks.",
+            file=sys.stderr,
+        )
         return 0
     owner, repo = parsed
 
@@ -125,10 +147,14 @@ def fetch_forks_into_repo(
             parent_owner = (parent.get("owner") or {}).get("login")
             parent_repo = parent.get("name")
         # Ensure and fetch upstream remote for parent
-        clone_url = parent.get("clone_url") or parent.get("ssh_url") or parent.get("git_url")
+        clone_url = (
+            parent.get("clone_url") or parent.get("ssh_url") or parent.get("git_url")
+        )
         if parent_owner and parent_repo and clone_url:
             base_remote_names = set(existing_remote_names(repo_dir))
-            upstream_name = sanitize_remote_name(f"upstream_{parent_owner}_{parent_repo}")
+            upstream_name = sanitize_remote_name(
+                f"upstream_{parent_owner}_{parent_repo}"
+            )
             uniq_upstream = upstream_name
             suffix = 1
             while uniq_upstream in base_remote_names:
@@ -136,8 +162,14 @@ def fetch_forks_into_repo(
                 suffix += 1
             try:
                 ensure_remote_with_refspec(repo_dir, uniq_upstream, clone_url)
-                run(["git", "fetch", "--force", "--prune", "--tags", uniq_upstream], cwd=repo_dir)
-                print(f"Fetched upstream parent remote '{uniq_upstream}'.", file=sys.stderr)
+                run(
+                    ["git", "fetch", "--force", "--prune", "--tags", uniq_upstream],
+                    cwd=repo_dir,
+                )
+                print(
+                    f"Fetched upstream parent remote '{uniq_upstream}'.",
+                    file=sys.stderr,
+                )
             except RuntimeError:
                 # Print error if upstream remote operations fail
                 print("Failed to add/fetch upstream parent remote.", file=sys.stderr)
@@ -148,7 +180,10 @@ def fetch_forks_into_repo(
     forks_repo = list_github_forks(owner, repo, token, needed_total)
     forks_parent = []
     if parent_owner and parent_repo:
-        print(f"Also discovering forks for parent {parent_owner}/{parent_repo}...", file=sys.stderr)
+        print(
+            f"Also discovering forks for parent {parent_owner}/{parent_repo}...",
+            file=sys.stderr,
+        )
         forks_parent = list_github_forks(parent_owner, parent_repo, token, needed_total)
     # Deduplicate by full_name with repo forks first (newest ordering preserved per source)
     seen_full = set()
@@ -173,9 +208,15 @@ def fetch_forks_into_repo(
     end = start + max(0, max_forks)
     selected = forks[start:end]
     if not selected:
-        print(f"No forks selected after applying offset={forks_offset} and limit={max_forks} (discovered={discovered_total}).", file=sys.stderr)
+        print(
+            f"No forks selected after applying offset={forks_offset} and limit={max_forks} (discovered={discovered_total}).",
+            file=sys.stderr,
+        )
         return 0, discovered_total, 0
-    print(f"Applying forks offset={forks_offset}, limit={max_forks}: selected={len(selected)} of discovered={discovered_total}.", file=sys.stderr)
+    print(
+        f"Applying forks offset={forks_offset}, limit={max_forks}: selected={len(selected)} of discovered={discovered_total}.",
+        file=sys.stderr,
+    )
     added = 0
     base_remote_names = set(existing_remote_names(repo_dir))
     for f in selected:
@@ -196,7 +237,10 @@ def fetch_forks_into_repo(
             suffix += 1
         try:
             ensure_remote_with_refspec(repo_dir, remote_name, clone_url)
-            run(["git", "fetch", "--force", "--prune", "--tags", remote_name], cwd=repo_dir)
+            run(
+                ["git", "fetch", "--force", "--prune", "--tags", remote_name],
+                cwd=repo_dir,
+            )
             base_remote_names.add(remote_name)
             added += 1
         except RuntimeError:
@@ -204,5 +248,3 @@ def fetch_forks_into_repo(
             continue
     print(f"Fetched refs from {added} fork(s).", file=sys.stderr)
     return added, discovered_total, len(selected)
-
-

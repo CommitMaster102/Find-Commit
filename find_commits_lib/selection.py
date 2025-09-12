@@ -11,7 +11,9 @@ def choose_preferred(repo_dir: Path, candidates: List[str]) -> str:
         if any(priority.search(b) for b in brs):
             return c
     # fallback to most recent
-    dated: List[Tuple[int, str]] = [(commit_timestamp(repo_dir, c), c) for c in candidates]
+    dated: List[Tuple[int, str]] = [
+        (commit_timestamp(repo_dir, c), c) for c in candidates
+    ]
     dated.sort(key=lambda t: t[0], reverse=True)
     return dated[0][1]
 
@@ -36,5 +38,3 @@ def choose_branch_for_commit(repo_dir: Path, commit: str) -> str:
         if pr_like.search(b):
             return b
     return brs[0]
-
-
