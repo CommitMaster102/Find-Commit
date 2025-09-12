@@ -481,12 +481,20 @@ def _write_final_timing_data(args: argparse.Namespace, timings: dict) -> None:
     timing_prefixes_txt = []
     timing_prefixes_env = []
     for step in ordered_steps:
-        timing_prefixes_txt.extend([
-            f"{step}_start=", f"{step}_end=", f"{step}_difference_time=",
-        ])
-        timing_prefixes_env.extend([
-            f"{step.upper()}_START=", f"{step.upper()}_END=", f"{step.upper()}_DIFFERENCE_TIME=",
-        ])
+        timing_prefixes_txt.extend(
+            [
+                f"{step}_start=",
+                f"{step}_end=",
+                f"{step}_difference_time=",
+            ]
+        )
+        timing_prefixes_env.extend(
+            [
+                f"{step.upper()}_START=",
+                f"{step.upper()}_END=",
+                f"{step.upper()}_DIFFERENCE_TIME=",
+            ]
+        )
 
     # Update report (.txt): insert before candidates section
     if Path(args.out_report).exists():
@@ -495,7 +503,8 @@ def _write_final_timing_data(args: argparse.Namespace, timings: dict) -> None:
 
         # Remove any existing timing lines (to avoid duplicates)
         filtered = [
-            ln for ln in lines
+            ln
+            for ln in lines
             if not any(ln.startswith(pref) for pref in timing_prefixes_txt)
         ]
 
@@ -516,7 +525,8 @@ def _write_final_timing_data(args: argparse.Namespace, timings: dict) -> None:
         lines = existing_content.split("\n")
 
         filtered = [
-            ln for ln in lines
+            ln
+            for ln in lines
             if not any(ln.startswith(pref) for pref in timing_prefixes_env)
         ]
 
