@@ -50,11 +50,11 @@ def test_fast_mode_flag_application():
              patch('find_commits_lib.core.orchestrate._compute_blob_hashes_and_report') as mock_compute_blob, \
              patch('find_commits_lib.core.orchestrate._scan_commits_for_candidates') as mock_scan, \
              patch('find_commits_lib.core.orchestrate._dedupe_preserve_order') as mock_dedupe, \
-             patch('find_commits_lib.core.orchestrate.choose_preferred') as mock_choose_preferred, \
+             patch('find_commits_lib.selection.choose_preferred') as mock_choose_preferred, \
              patch('find_commits_lib.core.orchestrate._write_report') as mock_write_report, \
              patch('find_commits_lib.core.orchestrate._write_env_file') as mock_write_env, \
              patch('find_commits_lib.core.orchestrate._print_summary') as mock_print_summary, \
-             patch('find_commits_lib.core.orchestrate.cleanup_repo_cache') as mock_cleanup:
+             patch('find_commits_lib.git_ops.cleanup_repo_cache') as mock_cleanup:
             
             # Set up mock return values
             mock_read_local.return_value = b"test content"
