@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from unittest.mock import patch
 
-from find_commits_lib.core import orchestrate
+from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.utils import (
     AutoProgressBar,
     Spinner,

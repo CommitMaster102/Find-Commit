@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from find_commits_lib.core import orchestrate
+from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.fuzzy import (
     fingerprint_text_for_fuzzy,
     jaccard_similarity,
