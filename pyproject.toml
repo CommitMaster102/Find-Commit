@@ -32,7 +32,7 @@ dev = [
     "flake8>=6.0.0",
     "pytest-cov>=4.0.0",
     "bandit[sarif]>=1.8.6",
-    "safety>=3.0.0",
+    "safety>=3.6.1",
 ]
 
 [tool.setuptools.packages.find]
