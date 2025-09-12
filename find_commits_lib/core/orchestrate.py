@@ -367,27 +367,8 @@ def _write_report(
         pass
     report_lines.append(f"candidates_count={len(candidates)}")
 
-    # Skip detailed timings in fast mode
-    if not fast_mode:
-        # timings: group by step and show start, end, duration
-        step_keys = set()
-        for k in timings.keys():
-            if k.endswith("_start") or k.endswith("_end") or k.endswith("_ms"):
-                step = k.rsplit("_", 1)[0]
-                step_keys.add(step)
-
-        for step in sorted(step_keys):
-            start_key = f"{step}_start"
-            end_key = f"{step}_end"
-            ms_key = f"{step}_ms"
-
-            if start_key in timings:
-                report_lines.append(f"{start_key}={timings[start_key]}")
-            if end_key in timings:
-                report_lines.append(f"{end_key}={timings[end_key]}")
-            if ms_key in timings:
-                duration_human = format_duration_human(timings[ms_key])
-                report_lines.append(f"{step}_difference_time={duration_human}")
+    # Timings are appended in a single, consistent block after all steps complete
+    # in _write_final_timing_data to avoid duplicates and ordering issues.
 
     report_lines.append("candidates:")
     # In fast mode, skip expensive branch lookups for each candidate
@@ -438,80 +419,109 @@ def _write_env_file(
             branches_joined = "\t\n".join(all_branches_for_preferred)
             env_lines.append(f'PREFERRED_BRANCHES="{branches_joined}"')
 
-    # Skip detailed timings in fast mode
-    if not fast_mode:
-        # timings into env: group by step and show start, end, duration
-        step_keys = set()
-        for k in timings.keys():
-            if k.endswith("_start") or k.endswith("_end") or k.endswith("_ms"):
-                step = k.rsplit("_", 1)[0]
-                step_keys.add(step)
-
-        for step in sorted(step_keys):
-            start_key = f"{step}_start"
-            end_key = f"{step}_end"
-            ms_key = f"{step}_ms"
-
-            if start_key in timings:
-                env_lines.append(f"{start_key.upper()}={timings[start_key]}")
-            if end_key in timings:
-                env_lines.append(f"{end_key.upper()}={timings[end_key]}")
-            if ms_key in timings:
-                duration_human = format_duration_human(timings[ms_key])
-                env_lines.append(f"{step.upper()}_DIFFERENCE_TIME={duration_human}")
+    # Timings are appended in a single, consistent block after all steps complete
+    # in _write_final_timing_data to avoid duplicates and ordering issues.
 
     Path(args.out_env).write_text("\n".join(env_lines), encoding="utf-8")
 
 
 def _write_final_timing_data(args: argparse.Namespace, timings: dict) -> None:
-    """Write final timing data to both report files after all steps complete."""
+    """Write final timing data to both report files after all steps complete.
+
+    Ensures each step is emitted once in start → end → difference order,
+    and avoids duplicating pre-existing lines.
+    """
     # Skip timing data in fast mode
     if getattr(args, "fast", False):
         return
 
-    # Read existing report file and append timing data
+    # Build ordered list of steps based on first-seen order in timings
+    ordered_steps: list[str] = []
+    seen_steps: set[str] = set()
+    for key in timings.keys():
+        if key.endswith("_start") or key.endswith("_end") or key.endswith("_ms"):
+            step = key.rsplit("_", 1)[0]
+            if step not in seen_steps:
+                seen_steps.add(step)
+                ordered_steps.append(step)
+
+    # Helper to build report timing lines (txt)
+    def build_report_timing_lines() -> list[str]:
+        lines: list[str] = []
+        for step in ordered_steps:
+            start_key = f"{step}_start"
+            end_key = f"{step}_end"
+            ms_key = f"{step}_ms"
+            if start_key in timings:
+                lines.append(f"{start_key}={timings[start_key]}")
+            if end_key in timings:
+                lines.append(f"{end_key}={timings[end_key]}")
+            if ms_key in timings:
+                duration_human = format_duration_human(timings[ms_key])
+                lines.append(f"{step}_difference_time={duration_human}")
+        return lines
+
+    # Helper to build env timing lines (env)
+    def build_env_timing_lines() -> list[str]:
+        lines: list[str] = []
+        for step in ordered_steps:
+            start_key = f"{step}_start"
+            end_key = f"{step}_end"
+            ms_key = f"{step}_ms"
+            if start_key in timings:
+                lines.append(f"{start_key.upper()}={timings[start_key]}")
+            if end_key in timings:
+                lines.append(f"{end_key.upper()}={timings[end_key]}")
+            if ms_key in timings:
+                duration_human = format_duration_human(timings[ms_key])
+                lines.append(f"{step.upper()}_DIFFERENCE_TIME={duration_human}")
+        return lines
+
+    # Compute keys to remove to avoid duplicates if any pre-existed
+    timing_prefixes_txt = []
+    timing_prefixes_env = []
+    for step in ordered_steps:
+        timing_prefixes_txt.extend([
+            f"{step}_start=", f"{step}_end=", f"{step}_difference_time=",
+        ])
+        timing_prefixes_env.extend([
+            f"{step.upper()}_START=", f"{step.upper()}_END=", f"{step.upper()}_DIFFERENCE_TIME=",
+        ])
+
+    # Update report (.txt): insert before candidates section
     if Path(args.out_report).exists():
         existing_content = Path(args.out_report).read_text(encoding="utf-8")
         lines = existing_content.split("\n")
 
+        # Remove any existing timing lines (to avoid duplicates)
+        filtered = [
+            ln for ln in lines
+            if not any(ln.startswith(pref) for pref in timing_prefixes_txt)
+        ]
+
         # Find where to insert timing data (before candidates section)
-        insert_idx = len(lines)
-        for i, line in enumerate(lines):
+        insert_idx = len(filtered)
+        for i, line in enumerate(filtered):
             if line.startswith("candidates:"):
                 insert_idx = i
                 break
 
-        # Add timing data
-        timing_lines = []
-        for key in sorted(timings.keys()):
-            if key.endswith("_start") or key.endswith("_end"):
-                timing_lines.append(f"{key}={timings[key]}")
-            elif key.endswith("_ms"):
-                step = key.rsplit("_", 1)[0]
-                duration_human = format_duration_human(timings[key])
-                timing_lines.append(f"{step}_difference_time={duration_human}")
-
-        # Insert timing data
-        new_lines = lines[:insert_idx] + timing_lines + lines[insert_idx:]
+        timing_lines = build_report_timing_lines()
+        new_lines = filtered[:insert_idx] + timing_lines + filtered[insert_idx:]
         Path(args.out_report).write_text("\n".join(new_lines), encoding="utf-8")
 
-    # Read existing env file and append timing data
+    # Update env (.env): append at end (after removing duplicates)
     if Path(args.out_env).exists():
         existing_content = Path(args.out_env).read_text(encoding="utf-8")
         lines = existing_content.split("\n")
 
-        # Add timing data
-        timing_lines = []
-        for key in sorted(timings.keys()):
-            if key.endswith("_start") or key.endswith("_end"):
-                timing_lines.append(f"{key.upper()}={timings[key]}")
-            elif key.endswith("_ms"):
-                step = key.rsplit("_", 1)[0]
-                duration_human = format_duration_human(timings[key])
-                timing_lines.append(f"{step.upper()}_DIFFERENCE_TIME={duration_human}")
+        filtered = [
+            ln for ln in lines
+            if not any(ln.startswith(pref) for pref in timing_prefixes_env)
+        ]
 
-        # Append timing data
-        new_lines = lines + timing_lines
+        timing_lines = build_env_timing_lines()
+        new_lines = filtered + timing_lines
         Path(args.out_env).write_text("\n".join(new_lines), encoding="utf-8")
 
 
