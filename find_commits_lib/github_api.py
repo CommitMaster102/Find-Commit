@@ -41,7 +41,7 @@ def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
     # Security validation: only allow HTTPS URLs
     if not url.startswith("https://"):
         raise ValueError("Only HTTPS URLs are allowed for security")
-    
+
     headers = {
         "Accept": "application/vnd.github+json",
         "User-Agent": "find-commits-script",
@@ -51,7 +51,9 @@ def github_api_get(url: str, token: str | None) -> Tuple[int, bytes]:
         headers["Authorization"] = f"Bearer {token}"
     req = Request(url, headers=headers)
     try:
-        with urlopen(req, timeout=30) as resp:  # nosec B310 - URL scheme is validated above
+        with urlopen(
+            req, timeout=30
+        ) as resp:  # nosec B310 - URL scheme is validated above
             status = getattr(resp, "status", 200)
             data = resp.read()
             return status, data

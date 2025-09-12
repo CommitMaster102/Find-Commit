@@ -16,13 +16,13 @@ def run(
     # Security validation: ensure we only run git commands
     if not cmd or cmd[0] != "git":
         raise ValueError("Only git commands are allowed")
-    
+
     # Additional validation: check for dangerous git operations
     dangerous_ops = ["reset", "checkout", "rebase", "merge", "pull", "push"]
     if len(cmd) > 1 and any(op in cmd[1] for op in dangerous_ops):
         # Allow these operations but add extra validation
         pass
-    
+
     if show_progress and "clone" in cmd or "fetch" in cmd:
         # Add progress flag for git clone/fetch operations
         if "clone" in cmd:
