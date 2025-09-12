@@ -66,8 +66,8 @@ def _read_local_bytes_or_exit(args: argparse.Namespace) -> bytes:
         if f is not None:
             f.close()
 
-def _prepare_repository(repo_dir: Path, repo_url: str) -> None:
-    ensure_repo(repo_dir, repo_url)
+def _prepare_repository(repo_dir: Path, repo_url: str, shallow: bool = False, depth: int = 1, selective: bool = False, parallel: bool = False, show_progress: bool = False, fast_mode: bool = False) -> None:
+    ensure_repo(repo_dir, repo_url, shallow=shallow, depth=depth, selective=selective, parallel=parallel, show_progress=show_progress, fast_mode=fast_mode)
 
 def _maybe_fetch_forks(args: argparse.Namespace, repo_dir: Path) -> Tuple[int, int, int]:
     if not getattr(args, "include_forks", False):
@@ -261,6 +261,7 @@ def _write_report(
     repo_dir: Path,
     timings: dict
 ) -> None:
+    fast_mode = getattr(args, "fast", False)
     report_lines: List[str] = []
     report_lines.append(f"mode={mode}")
     report_lines.append(f"preferred={preferred}")
@@ -275,32 +276,41 @@ def _write_report(
         # Fork-related variables may not be defined if fork fetching was skipped
         pass
     report_lines.append(f"candidates_count={len(candidates)}")
-    # timings: group by step and show start, end, duration
-    step_keys = set()
-    for k in timings.keys():
-        if k.endswith('_start') or k.endswith('_end') or k.endswith('_ms'):
-            step = k.rsplit('_', 1)[0]
-            step_keys.add(step)
     
-    for step in sorted(step_keys):
-        start_key = f"{step}_start"
-        end_key = f"{step}_end"
-        ms_key = f"{step}_ms"
+    # Skip detailed timings in fast mode
+    if not fast_mode:
+        # timings: group by step and show start, end, duration
+        step_keys = set()
+        for k in timings.keys():
+            if k.endswith('_start') or k.endswith('_end') or k.endswith('_ms'):
+                step = k.rsplit('_', 1)[0]
+                step_keys.add(step)
         
-        if start_key in timings:
-            report_lines.append(f"{start_key}={timings[start_key]}")
-        if end_key in timings:
-            report_lines.append(f"{end_key}={timings[end_key]}")
-        if ms_key in timings:
-            duration_human = format_duration_human(timings[ms_key])
-            report_lines.append(f"{step}_difference_time={duration_human}")
+        for step in sorted(step_keys):
+            start_key = f"{step}_start"
+            end_key = f"{step}_end"
+            ms_key = f"{step}_ms"
+            
+            if start_key in timings:
+                report_lines.append(f"{start_key}={timings[start_key]}")
+            if end_key in timings:
+                report_lines.append(f"{end_key}={timings[end_key]}")
+            if ms_key in timings:
+                duration_human = format_duration_human(timings[ms_key])
+                report_lines.append(f"{step}_difference_time={duration_human}")
     
     report_lines.append("candidates:")
-    for c in candidates:
-        ts = commit_timestamp(repo_dir, c)
-        br = branches_containing(repo_dir, c)
-        branches = "\t\n".join(br)
-        report_lines.append(f"  - commit={c} ts={ts} branches={branches}")
+    # In fast mode, skip expensive branch lookups for each candidate
+    if fast_mode:
+        for c in candidates:
+            report_lines.append(f"  - commit={c}")
+    else:
+        for c in candidates:
+            ts = commit_timestamp(repo_dir, c)
+            br = branches_containing(repo_dir, c)
+            branches = "\t\n".join(br)
+            report_lines.append(f"  - commit={c} ts={ts} branches={branches}")
+    
     Path(args.out_report).write_text("\n".join(report_lines), encoding="utf-8")
 
 def _write_env_file(
@@ -314,6 +324,7 @@ def _write_env_file(
     repo_dir: Path,
     timings: dict
 ) -> None:
+    fast_mode = getattr(args, "fast", False)
     env_lines = [
         f"PREFERRED_COMMIT={preferred}",
         f"CANDIDATE_COMMITS= -> \n\"{'\t\n'.join(candidates)}\"",
@@ -326,35 +337,45 @@ def _write_env_file(
     except NameError:
         # Fork-related variables may not be defined if fork fetching was skipped
         pass
-    used_branch = choose_branch_for_commit(repo_dir, preferred)
-    if used_branch:
-        env_lines.append(f"PREFERRED_BRANCH={used_branch}")
-        all_branches_for_preferred = branches_containing(repo_dir, preferred)
-        branches_joined = "\t\n".join(all_branches_for_preferred)
-        env_lines.append(f"PREFERRED_BRANCHES=\"{branches_joined}\"")
-    # timings into env: group by step and show start, end, duration
-    step_keys = set()
-    for k in timings.keys():
-        if k.endswith('_start') or k.endswith('_end') or k.endswith('_ms'):
-            step = k.rsplit('_', 1)[0]
-            step_keys.add(step)
+    # Skip expensive branch lookups in fast mode
+    if not fast_mode:
+        used_branch = choose_branch_for_commit(repo_dir, preferred)
+        if used_branch:
+            env_lines.append(f"PREFERRED_BRANCH={used_branch}")
+            all_branches_for_preferred = branches_containing(repo_dir, preferred)
+            branches_joined = "\t\n".join(all_branches_for_preferred)
+            env_lines.append(f"PREFERRED_BRANCHES=\"{branches_joined}\"")
     
-    for step in sorted(step_keys):
-        start_key = f"{step}_start"
-        end_key = f"{step}_end"
-        ms_key = f"{step}_ms"
+    # Skip detailed timings in fast mode
+    if not fast_mode:
+        # timings into env: group by step and show start, end, duration
+        step_keys = set()
+        for k in timings.keys():
+            if k.endswith('_start') or k.endswith('_end') or k.endswith('_ms'):
+                step = k.rsplit('_', 1)[0]
+                step_keys.add(step)
         
-        if start_key in timings:
-            env_lines.append(f"{start_key.upper()}={timings[start_key]}")
-        if end_key in timings:
-            env_lines.append(f"{end_key.upper()}={timings[end_key]}")
-        if ms_key in timings:
-            duration_human = format_duration_human(timings[ms_key])
-            env_lines.append(f"{step.upper()}_DIFFERENCE_TIME={duration_human}")
+        for step in sorted(step_keys):
+            start_key = f"{step}_start"
+            end_key = f"{step}_end"
+            ms_key = f"{step}_ms"
+            
+            if start_key in timings:
+                env_lines.append(f"{start_key.upper()}={timings[start_key]}")
+            if end_key in timings:
+                env_lines.append(f"{end_key.upper()}={timings[end_key]}")
+            if ms_key in timings:
+                duration_human = format_duration_human(timings[ms_key])
+                env_lines.append(f"{step.upper()}_DIFFERENCE_TIME={duration_human}")
+    
     Path(args.out_env).write_text("\n".join(env_lines), encoding="utf-8")
 
 def _write_final_timing_data(args: argparse.Namespace, timings: dict) -> None:
     """Write final timing data to both report files after all steps complete."""
+    # Skip timing data in fast mode
+    if getattr(args, "fast", False):
+        return
+    
     # Read existing report file and append timing data
     if Path(args.out_report).exists():
         existing_content = Path(args.out_report).read_text(encoding="utf-8")
@@ -410,6 +431,20 @@ def orchestrate(args: argparse.Namespace) -> None:
     repo_dir = _parse_repo_dir(args)
     repo_file_path = _parse_repo_file_path(args)
     timings: dict = {}
+    
+    # Fast mode optimizations
+    fast_mode = getattr(args, "fast", False)
+    if fast_mode:
+        # Disable progress bars and timings in fast mode
+        args.progress = False
+        args.timings = False
+        # Enable shallow clone and selective fetch for speed
+        args.shallow = True
+        args.depth = 1
+        args.selective = True
+        # Disable fork fetching in fast mode
+        args.include_forks = False
+    
     spinner = Spinner(getattr(args, "progress", False))
 
 
@@ -422,7 +457,12 @@ def orchestrate(args: argparse.Namespace) -> None:
         local_bytes = _read_local_bytes_or_exit(args)
     with StepDisplay("prepare_repo", "Preparing repository:", timings, 
                      AutoProgressBar(getattr(args, "progress", False)), getattr(args, "timings", False)):
-        _prepare_repository(repo_dir, args.repo_url)
+        shallow = getattr(args, "shallow", False)
+        depth = getattr(args, "depth", 1)
+        selective = getattr(args, "selective", False)
+        parallel = getattr(args, "parallel_fetch", False)
+        show_progress = getattr(args, "progress", False)
+        _prepare_repository(repo_dir, args.repo_url, shallow=shallow, depth=depth, selective=selective, parallel=parallel, show_progress=show_progress, fast_mode=fast_mode)
 
     if getattr(args, "include_forks", False):
         with StepDisplay("fetch_forks", "Fetching forks:", timings, 

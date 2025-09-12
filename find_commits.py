@@ -117,6 +117,32 @@ def main() -> None:
         default=0,
         help="Offset into the forks list before selecting (applied after deduplication)",
     )
+    parser.add_argument(
+        "--shallow",
+        action="store_true",
+        help="Use shallow clone for faster initial repository download (may miss some commits)",
+    )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=1,
+        help="Depth for shallow clone (default: 1, only latest commit per branch)",
+    )
+    parser.add_argument(
+        "--selective",
+        action="store_true",
+        help="Use selective fetching (only main branch and tags) for faster preparation",
+    )
+    parser.add_argument(
+        "--parallel-fetch",
+        action="store_true",
+        help="Use parallel fetching for better performance (experimental)",
+    )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Fast mode: skip expensive operations for quicker execution (shallow clone, minimal fetching, no progress bars)",
+    )
     args = parser.parse_args()
 
     # Guard for unexpected exceptions: cleanup repo cache before exiting

@@ -2,11 +2,19 @@ import subprocess
 import os
 import tempfile
 import re
+import concurrent.futures
 from pathlib import Path
 from typing import List
 
 
-def run(cmd: List[str], cwd: Path | None = None, input_bytes: bytes | None = None) -> str:
+def run(cmd: List[str], cwd: Path | None = None, input_bytes: bytes | None = None, show_progress: bool = False) -> str:
+    if show_progress and "clone" in cmd or "fetch" in cmd:
+        # Add progress flag for git clone/fetch operations
+        if "clone" in cmd:
+            cmd = cmd[:2] + ["--progress"] + cmd[2:]
+        elif "fetch" in cmd:
+            cmd = cmd[:2] + ["--progress"] + cmd[2:]
+    
     result = subprocess.run(
         cmd,
         cwd=str(cwd) if cwd else None,
@@ -20,9 +28,24 @@ def run(cmd: List[str], cwd: Path | None = None, input_bytes: bytes | None = Non
     return result.stdout.decode(errors='ignore').strip()
 
 
-def ensure_repo(repo_dir: Path, repo_url: str) -> None:
+def ensure_repo(repo_dir: Path, repo_url: str, shallow: bool = False, depth: int = 1, selective: bool = False, parallel: bool = False, show_progress: bool = False, fast_mode: bool = False) -> None:
     if not repo_dir.exists():
-        run(["git", "clone", repo_url, str(repo_dir)])
+        if shallow:
+            # Use shallow clone for faster initial download
+            clone_cmd = ["git", "clone", "--depth", str(depth), "--no-single-branch", repo_url, str(repo_dir)]
+        else:
+            clone_cmd = ["git", "clone", repo_url, str(repo_dir)]
+        run(clone_cmd)
+    else:
+        # Repository exists, check if we need to unshallow it
+        if shallow and _is_shallow_repo(repo_dir):
+            # Convert shallow repo to full repo if needed for comprehensive search
+            try:
+                run(["git", "fetch", "--unshallow"], cwd=repo_dir)
+            except RuntimeError:
+                # If unshallow fails, continue with shallow repo
+                pass
+    
     # Fetch all heads and tags
     # Make refspec configuration idempotent: clear existing, then add ours
     try:
@@ -39,11 +62,76 @@ def ensure_repo(repo_dir: Path, repo_url: str) -> None:
     except RuntimeError:
         # Not all remotes support PR refs; ignore
         pass
-    run([
-        "git", "fetch", "--force", "--prune", "--tags", "origin",
-        "+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*",
-        "+refs/pull/*/head:refs/remotes/origin/pr/*", "+refs/pull/*/merge:refs/remotes/origin/pr-merge/*",
-    ], cwd=repo_dir)
+    
+    # In fast mode, skip fetching if repo exists and is recent
+    if fast_mode and repo_dir.exists():
+        # Skip all fetching in fast mode for maximum speed
+        return
+    
+    # Check if we can skip fetching due to fresh cache
+    if _is_repo_fresh(repo_dir):
+        return
+    
+    # Optimize fetch based on repository type and selective mode
+    if selective:
+        # Selective fetch: only fetch main branch and tags
+        run(["git", "fetch", "--force", "--prune", "--tags", "origin", "HEAD"], cwd=repo_dir, show_progress=show_progress)
+    elif shallow and _is_shallow_repo(repo_dir):
+        # For shallow repos, only fetch what we need
+        run(["git", "fetch", "--force", "--prune", "--tags", "origin"], cwd=repo_dir, show_progress=show_progress)
+    elif parallel:
+        # Parallel fetch for better performance
+        refs = ["+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*", 
+                "+refs/pull/*/head:refs/remotes/origin/pr/*", "+refs/pull/*/merge:refs/remotes/origin/pr-merge/*"]
+        _parallel_fetch_refs(repo_dir, refs)
+    else:
+        # Full fetch for complete repositories
+        run([
+            "git", "fetch", "--force", "--prune", "--tags", "origin",
+            "+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*",
+            "+refs/pull/*/head:refs/remotes/origin/pr/*", "+refs/pull/*/merge:refs/remotes/origin/pr-merge/*",
+        ], cwd=repo_dir, show_progress=show_progress)
+
+
+def _is_shallow_repo(repo_dir: Path) -> bool:
+    """Check if the repository is a shallow clone."""
+    try:
+        run(["git", "rev-parse", "--is-shallow-repository"], cwd=repo_dir)
+        return True
+    except RuntimeError:
+        return False
+
+
+def _parallel_fetch_refs(repo_dir: Path, refs: List[str], max_workers: int = 4) -> None:
+    """Fetch multiple refs in parallel for better performance."""
+    def fetch_single_ref(ref):
+        try:
+            run(["git", "fetch", "--force", "origin", ref], cwd=repo_dir)
+            return True
+        except RuntimeError:
+            return False
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(fetch_single_ref, ref) for ref in refs]
+        concurrent.futures.wait(futures)
+
+
+def _is_repo_fresh(repo_dir: Path, max_age_hours: int = 24) -> bool:
+    """Check if the repository cache is fresh enough to skip re-fetching."""
+    try:
+        # Check when the repository was last updated
+        last_fetch = run(["git", "log", "-1", "--format=%ct", "FETCH_HEAD"], cwd=repo_dir)
+        if not last_fetch:
+            return False
+        
+        import time
+        last_fetch_time = int(last_fetch)
+        current_time = int(time.time())
+        age_hours = (current_time - last_fetch_time) / 3600
+        
+        return age_hours < max_age_hours
+    except RuntimeError:
+        return False
 
 
 def compute_blob_hash_bytes(blob_bytes: bytes) -> str:
