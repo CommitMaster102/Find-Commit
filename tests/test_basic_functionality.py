@@ -1,17 +1,16 @@
 import argparse
 import tempfile
-import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.fuzzy import (
-    jaccard_similarity,
-    minhash_similarity,
-    simhash_similarity,
     fingerprint_text_for_fuzzy,
+    jaccard_similarity,
     minhash_signature,
+    minhash_similarity,
     simhash64,
+    simhash_similarity,
 )
 
 
@@ -117,8 +116,10 @@ def test_fast_mode_optimizations():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
             patch("find_commits_lib.utils.Spinner"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values

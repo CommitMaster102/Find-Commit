@@ -4,10 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-from find_commits_lib import (
-    default_repo_dir_for,
-    cleanup_repo_cache,
-)
+from find_commits_lib import cleanup_repo_cache, default_repo_dir_for
 
 
 def main() -> None:

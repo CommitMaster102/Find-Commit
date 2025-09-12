@@ -1,13 +1,14 @@
 import json
-import sys
 import re
-from typing import List, Tuple
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
+import sys
 from pathlib import Path
+from typing import List, Tuple
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from find_commits_lib.git_ops import (
-    existing_remote_names,
     ensure_remote_with_refspec,
+    existing_remote_names,
     run,
     sanitize_remote_name,
 )

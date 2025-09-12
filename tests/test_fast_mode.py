@@ -1,8 +1,7 @@
 import argparse
 import tempfile
-import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from find_commits_lib.core.orchestrate import orchestrate
 
@@ -69,7 +68,9 @@ def test_fast_mode_flag_application():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -106,7 +107,7 @@ def test_fast_mode_flag_application():
 
 def test_fast_mode_file_writing_optimizations():
     """Test that fast mode skips expensive file writing operations."""
-    from find_commits_lib.core.orchestrate import _write_report, _write_env_file
+    from find_commits_lib.core.orchestrate import _write_env_file, _write_report
 
     # Create mock args with fast mode enabled
     args = argparse.Namespace(

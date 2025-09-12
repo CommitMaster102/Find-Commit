@@ -2,37 +2,37 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from find_commits_lib import (
-    normalize_lf,
-    ensure_repo,
-    compute_blob_hash_bytes,
-    find_exact_blob_commits,
-    commits_touching_path,
-    discover_paths_by_filename,
-    file_content_at,
     blob_id_at,
     branches_containing,
-    commit_timestamp,
-    choose_preferred,
     choose_branch_for_commit,
-    default_repo_dir_for,
     cleanup_repo_cache,
+    commit_timestamp,
+    commits_touching_path,
+    compute_blob_hash_bytes,
+    default_repo_dir_for,
+    discover_paths_by_filename,
+    ensure_repo,
+    fetch_forks_into_repo,
+    file_content_at,
+    find_exact_blob_commits,
     fingerprint_text_for_fuzzy,
     jaccard_similarity,
     minhash_signature,
     minhash_similarity,
+    normalize_lf,
     simhash64,
     simhash_similarity,
-    fetch_forks_into_repo,
 )
+from find_commits_lib import selection
 from find_commits_lib.utils import (
-    Spinner,
     AutoProgressBar,
+    Spinner,
     StepDisplay,
-    format_timestamp_ms,
     format_duration_human,
+    format_timestamp_ms,
 )
 
 
@@ -633,7 +633,7 @@ def orchestrate(args: argparse.Namespace) -> None:
         AutoProgressBar(getattr(args, "progress", False)),
         getattr(args, "timings", False),
     ):
-        preferred = choose_preferred(repo_dir, candidates)
+        preferred = selection.choose_preferred(repo_dir, candidates)
 
     with StepDisplay(
         "write_report",

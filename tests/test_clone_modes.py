@@ -1,8 +1,7 @@
 import argparse
 import tempfile
-import os
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.git_ops import ensure_repo
@@ -69,7 +68,9 @@ def test_shallow_clone_mode():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -158,7 +159,9 @@ def test_selective_fetch_mode():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -245,7 +248,9 @@ def test_parallel_fetch_mode():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -332,7 +337,9 @@ def test_combined_clone_modes():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -425,7 +432,9 @@ def test_fast_mode_enables_clone_optimizations():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -522,7 +531,7 @@ def test_ensure_repo_function_directly():
                     ensure_repo(temp_path, repo_url, **params)
                     # Verify that run was called (indicating git commands were executed)
                     assert mock_run.called
-                except Exception as e:
+                except Exception:
                     # Some combinations might not be valid, but the function should handle them
                     # Accept any exception as valid since we're testing parameter passing
                     pass
@@ -530,25 +539,22 @@ def test_ensure_repo_function_directly():
 
 def test_depth_parameter_validation():
     """Test that depth parameter is handled correctly."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
+    # Test different depth values
+    depth_values = [1, 2, 5, 10, 50]
 
-        # Test different depth values
-        depth_values = [1, 2, 5, 10, 50]
+    for depth in depth_values:
+        args = argparse.Namespace(
+            local_file="test.txt",
+            repo_url="https://github.com/test/repo.git",
+            shallow=True,
+            depth=depth,
+            selective=False,
+            parallel_fetch=False,
+            fast=False,
+        )
 
-        for depth in depth_values:
-            args = argparse.Namespace(
-                local_file="test.txt",
-                repo_url="https://github.com/test/repo.git",
-                shallow=True,
-                depth=depth,
-                selective=False,
-                parallel_fetch=False,
-                fast=False,
-            )
-
-            # Verify that depth is preserved
-            assert args.depth == depth
+        # Verify that depth is preserved
+        assert args.depth == depth
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 import os
-import shutil
 import re
-import time
+import shutil
 import stat
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
-from datetime import datetime
 
 
 def normalize_lf(content: bytes) -> bytes:

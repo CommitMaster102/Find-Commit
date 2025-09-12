@@ -1,17 +1,16 @@
 import argparse
 import tempfile
-import os
 import time
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.utils import (
-    Spinner,
     AutoProgressBar,
+    Spinner,
     StepDisplay,
-    format_timestamp_ms,
     format_duration_human,
+    format_timestamp_ms,
 )
 
 
@@ -74,7 +73,9 @@ def test_progress_mode_enabled():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -154,7 +155,9 @@ def test_timing_mode_enabled():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -234,7 +237,9 @@ def test_both_progress_and_timing_enabled():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -315,7 +320,9 @@ def test_fast_mode_disables_progress_and_timing():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values
@@ -494,7 +501,9 @@ def test_progress_bar_integration():
             patch("find_commits_lib.core.orchestrate._write_report"),
             patch("find_commits_lib.core.orchestrate._write_env_file"),
             patch("find_commits_lib.core.orchestrate._print_summary"),
-            patch("find_commits_lib.git_ops.cleanup_repo_cache"),
+            patch("find_commits_lib.utils.cleanup_repo_cache"),
+            patch("find_commits_lib.git_ops.branches_containing"),
+            patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
 
             # Set up mock return values

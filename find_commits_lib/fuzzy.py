@@ -1,7 +1,7 @@
-import re
-from typing import List
 import hashlib
 import random
+import re
+from typing import List
 
 
 def tokenize_for_fuzzy(text: str) -> List[str]:
