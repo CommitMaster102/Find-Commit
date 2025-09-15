@@ -185,3 +185,24 @@ jobs:
       with:
         name: dist
         path: dist/
+
+  checks:
+    name: Status Checks Summary
+    runs-on: ubuntu-latest
+    needs: [test, lint, security]
+    if: ${{ always() }}
+    steps:
+      - name: Aggregate results
+        env:
+          TEST: ${{ needs.test.result }}
+          LINT: ${{ needs.lint.result }}
+          SECURITY: ${{ needs.security.result }}
+        run: |
+          echo "test:     $TEST"
+          echo "lint:     $LINT"
+          echo "security: $SECURITY"
+          if [ "$TEST" != "success" ] || [ "$LINT" != "success" ] || [ "$SECURITY" != "success" ]; then
+            echo "One or more required jobs failed." >&2
+            exit 1
+          fi
+          echo "All required jobs succeeded."

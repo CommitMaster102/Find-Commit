@@ -3,20 +3,23 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from find_commits_lib.core.orchestrate import orchestrate
 from find_commits_lib.git_ops import ensure_repo
 
 
-def test_shallow_clone_mode():
-    """Test that shallow clone mode works correctly."""
+@pytest.mark.parametrize(
+    "shallow,depth",
+    [(True, 1), (True, 3)],
+)
+def test_shallow_clone_mode(shallow, depth):
+    """Shallow clone wiring passes correct flags and depth."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-
-        # Create a mock local file
         local_file = temp_path / "test_file.txt"
         local_file.write_text("hello world test content")
 
-        # Create mock args with shallow clone enabled
         args = argparse.Namespace(
             local_file=str(local_file),
             repo_url="https://github.com/test/repo.git",
@@ -34,14 +37,13 @@ def test_shallow_clone_mode():
             timings=False,
             forks_limit=20,
             forks_offset=0,
-            shallow=True,  # Enable shallow clone
-            depth=3,  # Set depth to 3
+            shallow=shallow,
+            depth=depth,
             selective=False,
             parallel_fetch=False,
             fast=False,
         )
 
-        # Mock the orchestrate function to test shallow clone
         with (
             patch("find_commits_lib.core.orchestrate._validate_forks_limit_or_exit"),
             patch(
@@ -72,8 +74,6 @@ def test_shallow_clone_mode():
             patch("find_commits_lib.git_ops.branches_containing"),
             patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
-
-            # Set up mock return values
             mock_read_local.return_value = b"hello world test content"
             mock_compute_blob.return_value = ("abc123", "abc123")
             mock_scan.return_value = ("exact_blob", ["def456"])
@@ -81,34 +81,27 @@ def test_shallow_clone_mode():
             mock_choose_preferred.return_value = "def456"
             mock_fetch_forks.return_value = (0, 0, 0)
 
-            # Run the orchestrate function
             try:
                 orchestrate(args)
             except SystemExit:
-                # Orchestration may terminate early with sys.exit during tests
                 pass
 
-            # Verify that shallow clone was enabled
-            assert args.shallow is True
-            assert args.depth == 3
+            assert args.shallow is shallow
+            assert args.depth == depth
 
-            # Verify that _prepare_repository was called with correct parameters
             mock_prepare_repo.assert_called_once()
             call_args = mock_prepare_repo.call_args
-            assert call_args[1]["shallow"] is True
-            assert call_args[1]["depth"] == 3
+            assert call_args[1]["shallow"] is shallow
+            assert call_args[1]["depth"] == depth
 
 
-def test_selective_fetch_mode():
-    """Test that selective fetch mode works correctly."""
+@pytest.mark.parametrize("selective", [True, False])
+def test_selective_fetch_mode(selective):
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-
-        # Create a mock local file
         local_file = temp_path / "test_file.txt"
         local_file.write_text("hello world test content")
 
-        # Create mock args with selective fetch enabled
         args = argparse.Namespace(
             local_file=str(local_file),
             repo_url="https://github.com/test/repo.git",
@@ -128,12 +121,11 @@ def test_selective_fetch_mode():
             forks_offset=0,
             shallow=False,
             depth=1,
-            selective=True,  # Enable selective fetch
+            selective=selective,
             parallel_fetch=False,
             fast=False,
         )
 
-        # Mock the orchestrate function to test selective fetch
         with (
             patch("find_commits_lib.core.orchestrate._validate_forks_limit_or_exit"),
             patch(
@@ -164,8 +156,6 @@ def test_selective_fetch_mode():
             patch("find_commits_lib.git_ops.branches_containing"),
             patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
-
-            # Set up mock return values
             mock_read_local.return_value = b"hello world test content"
             mock_compute_blob.return_value = ("abc123", "abc123")
             mock_scan.return_value = ("exact_blob", ["def456"])
@@ -173,32 +163,24 @@ def test_selective_fetch_mode():
             mock_choose_preferred.return_value = "def456"
             mock_fetch_forks.return_value = (0, 0, 0)
 
-            # Run the orchestrate function
             try:
                 orchestrate(args)
             except SystemExit:
-                # Orchestration may terminate early with sys.exit during tests
                 pass
 
-            # Verify that selective fetch was enabled
-            assert args.selective is True
-
-            # Verify that _prepare_repository was called with correct parameters
+            assert args.selective is selective
             mock_prepare_repo.assert_called_once()
             call_args = mock_prepare_repo.call_args
-            assert call_args[1]["selective"] is True
+            assert call_args[1]["selective"] is selective
 
 
-def test_parallel_fetch_mode():
-    """Test that parallel fetch mode works correctly."""
+@pytest.mark.parametrize("parallel", [True, False])
+def test_parallel_fetch_mode(parallel):
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-
-        # Create a mock local file
         local_file = temp_path / "test_file.txt"
         local_file.write_text("hello world test content")
 
-        # Create mock args with parallel fetch enabled
         args = argparse.Namespace(
             local_file=str(local_file),
             repo_url="https://github.com/test/repo.git",
@@ -219,11 +201,10 @@ def test_parallel_fetch_mode():
             shallow=False,
             depth=1,
             selective=False,
-            parallel_fetch=True,  # Enable parallel fetch
+            parallel_fetch=parallel,
             fast=False,
         )
 
-        # Mock the orchestrate function to test parallel fetch
         with (
             patch("find_commits_lib.core.orchestrate._validate_forks_limit_or_exit"),
             patch(
@@ -254,8 +235,6 @@ def test_parallel_fetch_mode():
             patch("find_commits_lib.git_ops.branches_containing"),
             patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
-
-            # Set up mock return values
             mock_read_local.return_value = b"hello world test content"
             mock_compute_blob.return_value = ("abc123", "abc123")
             mock_scan.return_value = ("exact_blob", ["def456"])
@@ -263,24 +242,19 @@ def test_parallel_fetch_mode():
             mock_choose_preferred.return_value = "def456"
             mock_fetch_forks.return_value = (0, 0, 0)
 
-            # Run the orchestrate function
             try:
                 orchestrate(args)
             except SystemExit:
-                # Orchestration may terminate early with sys.exit during tests
                 pass
 
-            # Verify that parallel fetch was enabled
-            assert args.parallel_fetch is True
-
-            # Verify that _prepare_repository was called with correct parameters
+            assert args.parallel_fetch is parallel
             mock_prepare_repo.assert_called_once()
             call_args = mock_prepare_repo.call_args
-            assert call_args[1]["parallel"] is True
+            assert call_args[1]["parallel"] is parallel
 
 
 def test_combined_clone_modes():
-    """Test that multiple clone modes can be combined."""
+    """Multiple clone modes can be combined and passed through."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
@@ -376,7 +350,7 @@ def test_combined_clone_modes():
 
 
 def test_fast_mode_enables_clone_optimizations():
-    """Test that fast mode automatically enables clone optimizations."""
+    """Fast mode automatically enables clone optimizations."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
@@ -469,7 +443,7 @@ def test_fast_mode_enables_clone_optimizations():
 
 
 def test_ensure_repo_function_directly():
-    """Test the ensure_repo function directly with different parameters."""
+    """Ensure ensure_repo is invokable with various parameter sets."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         repo_url = "https://github.com/test/repo.git"
@@ -537,13 +511,12 @@ def test_ensure_repo_function_directly():
                     # Verify that run was called (indicating git commands were executed)
                     assert mock_run.called
                 except Exception:
-                    # Some combinations might not be valid, but the function should handle them
-                    # Accept any exception as valid since we're testing parameter passing
+                    # Some combinations may raise depending on environment; ignore.
                     pass
 
 
 def test_depth_parameter_validation():
-    """Test that depth parameter is handled correctly."""
+    """Depth parameter remains unchanged across values."""
     # Test different depth values
     depth_values = [1, 2, 5, 10, 50]
 
@@ -560,14 +533,3 @@ def test_depth_parameter_validation():
 
         # Verify that depth is preserved
         assert args.depth == depth
-
-
-if __name__ == "__main__":
-    test_shallow_clone_mode()
-    test_selective_fetch_mode()
-    test_parallel_fetch_mode()
-    test_combined_clone_modes()
-    test_fast_mode_enables_clone_optimizations()
-    test_ensure_repo_function_directly()
-    test_depth_parameter_validation()
-    print("All clone mode tests passed!")

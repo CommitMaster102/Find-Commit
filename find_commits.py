@@ -68,10 +68,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--similarity-mode",
-        choices=["jaccard", "minhash", "simhash"],
+        choices=["jaccard", "minhash", "simhash", "charjaccard", "winnow"],
         default="jaccard",
         help=(
-            "Similarity algorithm for fallback scan: jaccard (default), minhash, simhash."
+            "Similarity algorithm for fallback scan: jaccard (default), minhash, simhash, "
+            "charjaccard (char n-gram Jaccard), or winnow (winnowing over token shingles)."
         ),
     )
     parser.add_argument(
@@ -85,6 +86,18 @@ def main() -> None:
         type=int,
         default=5,
         help="Token shingle size (k) for jaccard/minhash (default: 5).",
+    )
+    parser.add_argument(
+        "--char-ngram-size",
+        type=int,
+        default=5,
+        help="Character n-gram size for charjaccard mode (default: 5).",
+    )
+    parser.add_argument(
+        "--winnow-window",
+        type=int,
+        default=4,
+        help="Window size for winnow mode over token shingles (default: 4).",
     )
     parser.add_argument(
         "--minhash-perm",
