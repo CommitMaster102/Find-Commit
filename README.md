@@ -50,8 +50,8 @@ python find_commits.py <local_file> <repo_url> \
   [--repo-dir DIR] [--repo-file-path PATH] \
   [--out-env PATH] [--out-report PATH] \
   [--include-forks] [--github-token TOKEN] [--forks-limit N] [--forks-offset N] \
-  [--similarity-mode {jaccard,minhash,simhash}] [--similarity-threshold FLOAT] \
-  [--shingle-size INT] [--minhash-perm INT] \
+  [--similarity-mode {jaccard,minhash,simhash,charjaccard,winnow}] [--similarity-threshold FLOAT] \
+  [--shingle-size INT] [--char-ngram-size INT] [--winnow-window INT] [--minhash-perm INT] \
   [--progress] [--timings] \
   [--shallow] [--depth INT] [--selective] [--parallel-fetch] [--fast]
 ```
@@ -77,9 +77,11 @@ python find_commits.py <local_file> <repo_url> \
 | `--github-token`         | string                              |    `$GITHUB_TOKEN` | Token to raise API rate limits.                            |
 | `--forks-limit`          | int \[1–99]                         |               `20` | Max forks to fetch when including forks.                   |
 | `--forks-offset`         | int                                 |                `0` | Offset into de-duplicated fork list.                       |
-| `--similarity-mode`      | `jaccard` \| `minhash` \| `simhash` |          `jaccard` | Fallback similarity algorithm.                             |
+| `--similarity-mode`      | `jaccard` \| `minhash` \| `simhash` \| `charjaccard` \| `winnow` |          `jaccard` | Fallback similarity algorithm.                             |
 | `--similarity-threshold` | float \[0,1]                        |             `0.92` | Selection threshold in fallback mode.                      |
-| `--shingle-size`         | int                                 |                `5` | Token shingle size for Jaccard/MinHash.                    |
+| `--shingle-size`         | int                                 |                `5` | Token shingle size for Jaccard/MinHash/Winnow.             |
+| `--char-ngram-size`      | int                                 |                `5` | Character n-gram size for `charjaccard`.                   |
+| `--winnow-window`        | int                                 |                `4` | Window size for `winnow` (winnowing over token shingles).  |
 | `--minhash-perm`         | int                                 |              `128` | Number of permutations for MinHash.                        |
 | `--progress`             | flag                                |                off | Simple spinner/progress indicators.                        |
 | `--timings`              | flag                                |                off | Print per-step timings to terminal.                        |
@@ -178,6 +180,20 @@ python find_commits.py file.txt https://github.com/org/repo.git --fast --timings
 
 ```bash
 python find_commits.py file.txt https://github.com/org/repo.git --selective --parallel-fetch --timings
+```
+
+**Use char n-gram Jaccard (robust for small edits/spacing)**
+
+```bash
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --similarity-mode charjaccard --char-ngram-size 5 --similarity-threshold 0.9 --timings
+```
+
+**Use Winnowing over token shingles (compact fingerprinting)**
+
+```bash
+python find_commits.py file.txt https://github.com/org/repo.git \
+  --similarity-mode winnow --shingle-size 5 --winnow-window 4 --similarity-threshold 0.9 --timings
 ```
 
 ---

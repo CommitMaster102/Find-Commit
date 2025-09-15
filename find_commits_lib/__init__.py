@@ -1,11 +1,13 @@
 # Main package exports
 from .fuzzy import (
+    char_ngram_set,
     fingerprint_text_for_fuzzy,
     jaccard_similarity,
     minhash_signature,
     minhash_similarity,
     simhash64,
     simhash_similarity,
+    winnow_fingerprint,
 )
 from .git_ops import (
     blob_id_at,
@@ -31,9 +33,11 @@ from .utils import (
 __all__ = [
     # Fuzzy matching
     "fingerprint_text_for_fuzzy",
+    "char_ngram_set",
     "jaccard_similarity",
     "minhash_signature",
     "minhash_similarity",
+    "winnow_fingerprint",
     "simhash64",
     "simhash_similarity",
     # Git operations

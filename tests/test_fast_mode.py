@@ -3,20 +3,26 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from find_commits_lib.core.orchestrate import orchestrate
 
 
-def test_fast_mode_flag_application():
-    """Test that fast mode correctly applies optimizations to args."""
-    # Create a temporary directory for testing
+@pytest.mark.parametrize(
+    "include_forks,shallow_in,selective_in",
+    [
+        (True, False, False),
+        (False, False, True),
+        (True, True, False),
+    ],
+)
+def test_fast_mode_flag_application(include_forks, shallow_in, selective_in):
+    """Fast mode applies optimizations consistently across input states."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-
-        # Create a mock local file
         local_file = temp_path / "test_file.txt"
         local_file.write_text("test content")
 
-        # Create mock args with fast mode enabled
         args = argparse.Namespace(
             local_file=str(local_file),
             repo_url="https://github.com/test/repo.git",
@@ -24,24 +30,23 @@ def test_fast_mode_flag_application():
             repo_file_path="",
             out_env="test.env",
             out_report="test.txt",
-            include_forks=True,  # Start with forks enabled
+            include_forks=include_forks,
             github_token="",
             similarity_mode="jaccard",
             similarity_threshold=0.92,
             shingle_size=5,
             minhash_perm=128,
-            progress=True,  # Start with progress enabled
-            timings=True,  # Start with timings enabled
+            progress=True,
+            timings=True,
             forks_limit=20,
             forks_offset=0,
-            shallow=False,  # Start with shallow disabled
+            shallow=shallow_in,
             depth=1,
-            selective=False,  # Start with selective disabled
+            selective=selective_in,
             parallel_fetch=False,
-            fast=True,  # Enable fast mode
+            fast=True,
         )
 
-        # Mock the orchestrate function to just test the fast mode logic
         with (
             patch("find_commits_lib.core.orchestrate._validate_forks_limit_or_exit"),
             patch(
@@ -72,8 +77,6 @@ def test_fast_mode_flag_application():
             patch("find_commits_lib.git_ops.branches_containing"),
             patch("find_commits_lib.git_ops.commit_timestamp"),
         ):
-
-            # Set up mock return values
             mock_read_local.return_value = b"test content"
             mock_compute_blob.return_value = ("abc123", "abc123")
             mock_scan.return_value = ("exact_blob", ["abc123"])
@@ -81,26 +84,17 @@ def test_fast_mode_flag_application():
             mock_choose_preferred.return_value = "abc123"
             mock_fetch_forks.return_value = (0, 0, 0)
 
-            # Run the orchestrate function
             try:
                 orchestrate(args)
             except SystemExit:
-                # Orchestrate can call sys.exit on validation or early termination in tests
                 pass
 
-            # Verify that fast mode optimizations were applied
-            # 1. Progress and timings should be disabled
             assert args.progress is False
             assert args.timings is False
-
-            # 2. Shallow clone and selective fetch should be enabled
             assert args.shallow is True
             assert args.selective is True
-
-            # 3. Fork fetching should be disabled
             assert args.include_forks is False
 
-            # 4. _prepare_repository should be called with fast_mode=True
             mock_prepare_repo.assert_called_once()
             call_args = mock_prepare_repo.call_args
             assert call_args[1]["fast_mode"] is True
@@ -207,9 +201,3 @@ def test_fast_mode_file_writing_optimizations():
         # Clean up test files
         Path("test_report.txt").unlink(missing_ok=True)
         Path("test_env.env").unlink(missing_ok=True)
-
-
-if __name__ == "__main__":
-    test_fast_mode_flag_application()
-    test_fast_mode_file_writing_optimizations()
-    print("All fast mode tests passed!")

@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple
 from find_commits_lib import (
     blob_id_at,
     branches_containing,
+    char_ngram_set,
     choose_branch_for_commit,
     cleanup_repo_cache,
     commit_timestamp,
@@ -26,6 +27,7 @@ from find_commits_lib import (
     selection,
     simhash64,
     simhash_similarity,
+    winnow_fingerprint,
 )
 from find_commits_lib.utils import (
     AutoProgressBar,
@@ -246,6 +248,22 @@ def _scan_commits_for_candidates(
             else None
         )
         local_sh = simhash64(local_text) if mode_choice == "simhash" else None
+        local_char = (
+            char_ngram_set(
+                local_text, n=max(1, int(getattr(args, "char_ngram_size", 5) or 5))
+            )
+            if mode_choice == "charjaccard"
+            else None
+        )
+        local_win = (
+            winnow_fingerprint(
+                local_text,
+                k=shingle_k,
+                window=max(1, int(getattr(args, "winnow_window", 4) or 4)),
+            )
+            if mode_choice == "winnow"
+            else None
+        )
 
     candidates: List[str] = []
     best_fuzzy: List[Tuple[float, str]] = []  # (score, commit)
@@ -304,9 +322,21 @@ def _scan_commits_for_candidates(
                     num_perm=max(1, int(getattr(args, "minhash_perm", 128) or 128)),
                 )
                 score = minhash_similarity(local_mh or [], repo_mh)
-            else:  # simhash
+            elif mode_choice == "simhash":
                 repo_sh = simhash64(repo_text)
                 score = simhash_similarity(local_sh or 0, repo_sh)
+            elif mode_choice == "charjaccard":
+                repo_char = char_ngram_set(
+                    repo_text, n=max(1, int(getattr(args, "char_ngram_size", 5) or 5))
+                )
+                score = jaccard_similarity(local_char or set(), repo_char)
+            else:  # winnow
+                repo_win = winnow_fingerprint(
+                    repo_text,
+                    k=shingle_k,
+                    window=max(1, int(getattr(args, "winnow_window", 4) or 4)),
+                )
+                score = jaccard_similarity(local_win or set(), repo_win)
             best_fuzzy.append((score, c))
 
     # If no exact candidates, pick top fuzzy matches above a threshold
