@@ -250,6 +250,12 @@ class AutoProgressBar:
                 current = self._current
                 total = self._total
                 pulse = self._pulse
+
+            # Initialize variables that may be used in both branches
+            status = ""
+            left_pad = 0
+            right_pad = 0
+
             if total <= 0:
                 # Unknown total: static label on the left, animated status text inside bar
                 label_text = self._ellipsize_middle(label, self._label_w)
