@@ -87,6 +87,7 @@ def test_fast_mode_flag_application(include_forks, shallow_in, selective_in):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.progress is False

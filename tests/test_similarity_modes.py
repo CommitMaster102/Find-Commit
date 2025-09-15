@@ -95,6 +95,7 @@ def test_similarity_modes_parametrized(mode, threshold, shingle, perm):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.similarity_mode == mode
@@ -181,6 +182,7 @@ def test_additional_modes_parametrized(mode, extra):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.similarity_mode == mode

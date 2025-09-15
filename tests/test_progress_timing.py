@@ -92,6 +92,7 @@ def test_progress_and_timing_modes(progress, timings):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.progress is progress
@@ -167,6 +168,7 @@ def test_fast_mode_disables_progress_and_timing():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.progress is False
@@ -296,6 +298,7 @@ def test_progress_bar_integration():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.progress is True

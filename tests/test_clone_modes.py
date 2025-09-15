@@ -84,6 +84,7 @@ def test_shallow_clone_mode(shallow, depth):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.shallow is shallow
@@ -166,6 +167,7 @@ def test_selective_fetch_mode(selective):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.selective is selective
@@ -245,6 +247,7 @@ def test_parallel_fetch_mode(parallel):
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             assert args.parallel_fetch is parallel

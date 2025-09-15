@@ -120,6 +120,7 @@ def test_orchestrate_smoke_jaccard_calls_outputs():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate may call sys.exit() during testing
                 pass
 
             mock_write_report.assert_called_once()
