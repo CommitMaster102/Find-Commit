@@ -96,6 +96,7 @@ def test_charjaccard_scoring_threshold_includes_better_match():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Suppress sys.exit from orchestrate to allow assertions below
                 pass
             # Inspect candidates passed to report writer
             assert mock_write_report.called
@@ -166,6 +167,7 @@ def test_winnow_scoring_threshold_selects_high_overlap():
             try:
                 orchestrate(args)
             except SystemExit:
+                # Expected: orchestrate() may call sys.exit(). Swallowing for test assertions below.
                 pass
             assert mock_write_report.called
             call = mock_write_report.call_args
@@ -233,6 +235,7 @@ def test_minhash_threshold_includes_only_better():
             try:
                 orchestrate(args)
             except SystemExit:
+                # We suppress SystemExit here to allow inspection of side effects after orchestrate() exits.
                 pass
             call = mock_write_report.call_args
             candidates = call[1].get("candidates") or call[0][8]
@@ -298,6 +301,7 @@ def test_normalized_path_order_descending_similarity():
             try:
                 orchestrate(args)
             except SystemExit:
+                # SystemExit is expected here if orchestrate decides to exit the process.
                 pass
             call = mock_write_report.call_args
             mode = call[1].get("mode") or call[0][1]
